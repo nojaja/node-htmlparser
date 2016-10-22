@@ -18,7 +18,7 @@ View runtests.html in any browser
 ```javascript
 var htmlparser = require("htmlparser");
 var rawHtml = "Xyz <script language= javascript>var foo = '<<bar>>';< /  script><!--<!-- Waah! -- -->";
-var handler = new htmlparser.DefaultHandler(function (error, dom) {
+var handler = new htmlparser.HtmlBuilder(function (error, dom) {
 	if (error)
 		[...do something for errors...]
 	else
@@ -32,7 +32,7 @@ sys.puts(sys.inspect(handler.dom, false, null));
 ##Usage In Browser
 
 ```javascript
-var handler = new Tautologistics.NodeHtmlParser.DefaultHandler(function (error, dom) {
+var handler = new Tautologistics.NodeHtmlParser.HtmlBuilder(function (error, dom) {
 	if (error)
 		[...do something for errors...]
 	else
