@@ -1,0 +1,526 @@
+
+
+<!DOCTYPE html>
+<html >
+  <head>
+    <meta charset="UTF-8">
+    <title>NodeHtmlParser| Testing | Mocha - test</title>
+    <link rel='stylesheet prefetch' href='https://cdnjs.cloudflare.com/ajax/libs/mocha/2.2.5/mocha.min.css'>
+  </head>
+  <body translate="no" >
+<!-- mochaのUI -->
+  <div id="mocha"></div>
+<!-- mochaを実行 -->
+<script language=javascript>
+  window.onload = function() {
+    mocha.checkLeaks();
+    // RUN MOCHA
+    mocha.run();
+  }
+</script>
+    
+<script src='https://cdnjs.cloudflare.com/ajax/libs/mocha/2.2.5/mocha.min.js'></script>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/chai/2.3.0/chai.min.js'></script>
+<script src='http://codepen.io/nojaja/pen/GjzRga.js'></script>
+
+<script>
+// MOCHA - test
+(function() {
+
+  //mocha初期化
+  mocha.setup('bdd');
+  // CHAI
+  var assert = chai.assert; // ChaiのAPIを使用
+  var expect = chai.expect;
+  var should = chai.should();
+
+  //Test Code
+  var htmlparser = Tautologistics.NodeHtmlParser;
+  var handler = new htmlparser.HtmlBuilder(function(err, dom) {
+    if (err) console.error(err);
+  }, {
+    enforceEmptyTags: true,
+    ignoreWhitespace: true,
+    verbose: false
+  });
+  var parser = new htmlparser.Parser(handler, {
+    includeLocation: true
+  });
+  var parseHtml = function(rawHtml) {
+    parser.parseComplete(rawHtml);
+    // parseしたオブジェクトを返却
+    return toJson(handler.dom);
+  };
+  var toJson = function(parseData) {
+    var cache = [];
+    return JSON.parse(JSON.stringify(parseData, function(key, value) {
+      if (key == 'parentNode') return;
+      if (typeof value === 'object' && value !== null) {
+        if (cache.indexOf(value) !== -1) { // Circular reference found, discard key
+          return;
+        }
+        // Store value in our collection
+        cache.push(value);
+      }
+      return value;
+    }));
+  }
+
+  describe('NodeHtmlParser v2.0', function() {
+    describe('html', function() {
+      it('normal tag', function() {
+        assert.deepEqual(parseHtml(
+          `<div></div>`
+        ), [{
+          'type': 'tag',
+          'name': 'div'
+        }]);
+        assert.deepEqual(parseHtml(
+          `<div />`
+        ), [{
+          'type': 'tag',
+          'name': 'div'
+        }]);
+        assert.deepEqual(parseHtml(
+          `<div>hoge</div>`
+        ), [{
+          'type': 'tag',
+          'name': 'div',
+          'children': [{
+            'type': 'text',
+            'data': 'hoge'
+          }]
+        }]);
+        assert.deepEqual(parseHtml(
+          `<div><div>hoge</div></div>`
+        ), [{
+          'type': 'tag',
+          'name': 'div',
+          'children': [{
+            'type': 'tag',
+            'name': 'div',
+            'children': [{
+              'type': 'text',
+              'data': 'hoge'
+            }]
+          }]
+        }]);
+        assert.deepEqual(parseHtml(
+          `<div><div>hoge</div>hoge</div>`
+        ), [{
+          'type': 'tag',
+          'name': 'div',
+          'children': [{
+            'type': 'tag',
+            'name': 'div',
+            'children': [{
+              'type': 'text',
+              'data': 'hoge'
+            }]
+          }, {
+            'type': 'text',
+            'data': 'hoge'
+          }]
+        }]);
+        assert.deepEqual(parseHtml(
+          `<font>
+                <br>this is the text
+<font>`
+        ), [{
+          type: 'tag',
+          name: 'font',
+          children: [{
+            type: 'tag',
+            name: 'br'
+          }, {
+            data: 'this is the text\n',
+            type: 'text'
+          }, {
+            type: 'tag',
+            name: 'font'
+          }]
+        }]);
+      });
+      it('text', function() {
+        assert.deepEqual(parseHtml(`Xyz `), [{
+          type: 'text',
+          data: 'Xyz '
+        }]);
+      });
+      it('script tag', function() {
+        assert.deepEqual(parseHtml(
+          `<script language= javascript>var foo = '<<bar>>';</ script>`
+        ), [{
+          attributes: {
+            language: [{
+              data: 'javascript',
+              type: 'text'
+            }]
+          },
+          children: [{
+            data: 'var foo = \'<<bar>>\';',
+            type: 'text'
+          }],
+          name: 'script',
+          type: 'tag'
+        }]);
+      });
+      it('comment tag', function() {
+        assert.deepEqual(parseHtml(`<!-- Waah! -->`), [{
+          data: ' Waah! ',
+          type: 'comment'
+        }]);
+        assert.deepEqual(parseHtml(`<!----- Waah! ----->`), [{
+          data: '--- Waah! ---',
+          type: 'comment'
+        }]);
+        assert.deepEqual(parseHtml(`<!--
+Waah!
+-->`), [{
+          data: '\nWaah!\n',
+          type: 'comment'
+        }]);
+        assert.deepEqual(parseHtml(`<!--<!-- Waah! -- -->`), [{
+          data: '<!-- Waah! -- ',
+          type: 'comment'
+        }]);
+      });
+      it('BASIC', function() {
+        assert.deepEqual(parseHtml(
+          `Xyz <script language= javascript>var foo = '<<bar>>';</ script><!--<!-- Waah! -- -->`), [{
+          type: 'text',
+          data: 'Xyz '
+        }, {
+          attributes: {
+            language: [{
+              data: 'javascript',
+              type: 'text'
+            }]
+          },
+          children: [{
+            data: 'var foo = \'<<bar>>\';',
+            type: 'text'
+          }],
+          type: 'tag',
+          name: 'script'
+        }, {
+          data: '<!-- Waah! -- ',
+          type: 'comment'
+        }]);
+      });
+
+    });
+
+    describe('DomUtils', function() {
+      var html =
+        `<a>text a</a><b id='x'>text b</b>
+<c class='y'>text c</c>
+<d id='z' class='w'>
+  <e>text e</e>
+</d>
+<g class='g h i'>hhh</g>
+<yy>hellow</yy>
+<yy id='secondyy'>world</yy>
+<font id='id01'>
+  <br>this is the text
+</font>
+<script language="javascript">
+  var foo = '<<bar>>';
+</script>`;
+      it('getElementById', function() {
+        var dom = parseHtml(html);
+        var id = htmlparser.DomUtils.getElementById("x", dom);
+        assert.deepEqual(id, {
+          'type': 'tag',
+          'name': 'b',
+          'attributes': {
+            'id': [{
+              'data': 'x',
+              'type': 'text'
+            }]
+          },
+          'children': [{
+            'type': 'text',
+            'data': 'text b'
+          }]
+        });
+      });
+
+      it('getElementsByTagName', function() {
+        var dom = parseHtml(html);
+        var name = htmlparser.DomUtils.getElementsByTagName("a", dom);
+        assert.deepEqual(name, [{
+          'type': 'tag',
+          'name': 'a',
+          'children': [{
+            'type': 'text',
+            'data': 'text a'
+          }]
+        }]);
+      });
+
+      it('getElements({ class: "y" })', function() {
+        var dom = parseHtml(html);
+        var clazz = htmlparser.DomUtils.getElements({
+          class: "y"
+        }, dom);
+        assert.deepEqual(clazz, [{
+          'type': 'tag',
+          'name': 'c',
+          'attributes': {
+            'class': [{
+              'data': 'y',
+              'type': 'text'
+            }]
+          },
+          'children': [{
+            'type': 'text',
+            'data': 'text c'
+          }]
+        }]);
+      });
+
+      it('getElements({ class: function (value) {console.log(value); return(value && value.indexOf("h") > -1); } })', function() {
+        var dom = parseHtml(html);
+        var multiclass = htmlparser.DomUtils.getElements({
+          class: function(value) {
+            console.log(value);
+            return (value && value.indexOf("h") > -1);
+          }
+        }, dom);
+        assert.deepEqual(multiclass, [{
+          'type': 'tag',
+          'name': 'g',
+          'attributes': {
+            'class': [{
+              'data': 'g h i',
+              'type': 'text'
+            }]
+          },
+          'children': [{
+            'type': 'text',
+            'data': 'hhh'
+          }]
+        }]);
+      });
+
+      it('getElementsByTagType', function() {
+        var dom = parseHtml(html);
+        var text = htmlparser.DomUtils.getElementsByTagType("text", dom);
+        assert.deepEqual(text[0], {
+          'type': 'text',
+          'data': 'text a'
+        });
+      });
+
+      it('getElements({ tag_name: "d", id: "z", class: "w" })', function() {
+        var dom = parseHtml(html);
+        var nested = htmlparser.DomUtils.getElements({
+          tag_name: "d",
+          id: "z",
+          class: "w"
+        }, dom);
+        nested = htmlparser.DomUtils.getElementsByTagName("e", nested);
+        nested = htmlparser.DomUtils.getElementsByTagType("text", nested);
+        assert.deepEqual(nested, [{
+          'type': 'text',
+          'data': 'text e'
+        }]);
+      });
+
+      it('getElementsByTagType', function() {
+        var dom = parseHtml(html);
+        var double = htmlparser.DomUtils.getElementsByTagName("yy", dom);
+
+        assert.deepEqual(double, [{
+          'type': 'tag',
+          'name': 'yy',
+          'children': [{
+            'type': 'text',
+            'data': 'hellow'
+          }]
+        }, {
+          'type': 'tag',
+          'name': 'yy',
+          'attributes': {
+            'id': [{
+              'data': 'secondyy',
+              'type': 'text'
+            }]
+          },
+          'children': [{
+            'type': 'text',
+            'data': 'world'
+          }]
+        }]);
+      });
+
+      
+      it('getElements( { tag_name: "yy", id: "secondyy" })', function() {
+        var dom = parseHtml(html);
+        var single = htmlparser.DomUtils.getElements( { tag_name: "yy", id: "secondyy" }, dom);
+
+        assert.deepEqual(single, [ {
+          'type': 'tag',
+          'name': 'yy',
+          'attributes': {
+            'id': [{
+              'data': 'secondyy',
+              'type': 'text'
+            }]
+          },
+          'children': [{
+            'type': 'text',
+            'data': 'world'
+          }]
+        }]);
+      });
+      
+      
+    });
+
+  });
+
+  describe('NodeHtmlParser v2.1', function() {
+    describe('html', function() {
+      it('template script ', function() {
+
+        assert.deepEqual(parseHtml(
+          `{hoge}`
+        ), [{
+          'type': 'script',
+          'langName': 'singleMustache',
+          'data': 'hoge'
+        }]);
+        assert.deepEqual(parseHtml(
+          `{{hoge}}`
+        ), [{
+          'type': 'script',
+          'langName': 'mustache',
+          'data': 'hoge'
+        }]);
+
+        assert.deepEqual(parseHtml(
+          `{hoge}hoge{{hoge}}`
+        ), [{
+          'type': 'script',
+          'langName': 'singleMustache',
+          'data': 'hoge'
+        }, {
+          'type': 'text',
+          'data': 'hoge'
+        }, {
+          'type': 'script',
+          'langName': 'mustache',
+          'data': 'hoge'
+        }]);
+
+        assert.deepEqual(parseHtml(
+          `{!comment}`
+        ), [{
+          'type': 'comment',
+          'name': '!',
+          'langName': 'singleMustache',
+          'data': 'comment'
+        }]);
+
+        assert.deepEqual(parseHtml(
+          `{{!comment}}`
+        ), [{
+          'type': 'comment',
+          'name': '!',
+          'langName': 'mustache',
+          'data': 'comment'
+        }]);
+
+        assert.deepEqual(parseHtml(
+          `<div>{hoge}</div>`
+        ), [{
+          'type': 'tag',
+          'name': 'div',
+          'children': [{
+            'type': 'script',
+            'langName': 'singleMustache',
+            'data': 'hoge'
+          }]
+        }]);
+        assert.deepEqual(parseHtml(
+          `<div>{{hoge}}</div>`
+        ), [{
+          'type': 'tag',
+          'name': 'div',
+          'children': [{
+            'type': 'script',
+            'langName': 'mustache',
+            'data': 'hoge'
+          }]
+        }]);
+
+        assert.deepEqual(parseHtml(
+          `{{#if true}}<div>{{hoge}}</div>{{/if}}`
+        ), [{
+          'data': 'true',
+          'langName': 'mustache',
+          'type': 'script',
+          'name': 'if',
+          'children': [{
+            'type': 'tag',
+            'name': 'div',
+            'children': [{
+              'type': 'script',
+              'langName': 'mustache',
+              'data': 'hoge'
+            }]
+          }]
+        }]);
+
+        assert.deepEqual(parseHtml(
+          `{#if this.props.count > 1}<div if='{message}'>hoge</div>{{/if}}`
+        ), [{
+          'data': 'this.props.count > 1',
+          'langName': 'singleMustache',
+          'type': 'script',
+          'name': 'if',
+          'children': [{
+            'type': 'tag',
+            'name': 'div',
+            'attributes': {
+              'if': [{
+                'data': 'message',
+                'langName': 'singleMustache',
+                'type': 'script'
+              }]
+            },
+            'children': [{
+              'type': 'text',
+              'data': 'hoge'
+            }]
+          }]
+        }]);
+
+        assert.deepEqual(parseHtml(
+          `{#if true}<div>{hoge}</div>{/if}`
+        ), [{
+          'data': 'true',
+          'langName': 'singleMustache',
+          'type': 'script',
+          'name': 'if',
+          'children': [{
+            'type': 'tag',
+            'name': 'div',
+            'children': [{
+              'type': 'script',
+              'langName': 'singleMustache',
+              'data': 'hoge'
+            }]
+          }]
+        }]);
+      });
+    });
+  });
+})();
+      //# sourceURL=pen.js
+    </script>
+  </body>
+</html>
+ 
