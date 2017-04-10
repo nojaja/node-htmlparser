@@ -7,13 +7,13 @@ A forgiving HTML/XML/RSS parser written in JS for both the browser and NodeJS (y
 
 
 ## migration
-  v1.7.6 -> v2.1
-  DefaultHandler -> HtmlBuilder
+  # v1.7.6 -> v2.1
+  * DefaultHandler -> HtmlBuilder
   
-  result field
-  attribs -> attributes
-  attribs:'data' -> attributes.data:'data'
-  script.type='sctipt' -> script.type='tag'
+  * result field
+    - attribs -> attributes
+    - attribs:'data' -> attributes.data:'data'
+    - script.type='sctipt' -> script.type='tag'
  
 ex.
 ```json
