@@ -1,19 +1,47 @@
-#NodeHtmlParser
+# NodeHtmlParser
 A forgiving HTML/XML/RSS parser written in JS for both the browser and NodeJS (yes, despite the name it works just fine in any modern browser). The parser can handle streams (chunked data) and supports custom handlers for writing custom DOMs/output.
 
-##Installing
+## Installing
 
 	npm install htmlparser
 
-##Running Tests
 
-###Run tests under node:
+## migration
+  v1.7.6 -> v2.1
+  DefaultHandler -> HtmlBuilder
+  
+  result field
+  attribs -> attributes
+  attribs:'data' -> attributes.data:'data'
+  script.type='sctipt' -> script.type='tag'
+ 
+ex.
+```json
+  script tag
+        attribs: {
+            language: 'javascript'
+         },
+         
+          type: 'script'
+   ->
+        attributes: {
+            language: [{
+              data: 'javascript',
+              type: 'text'
+            }]
+         },
+         type: 'tag'       
+```
+
+## Running Tests
+
+### Run tests under node:
 	node runtests.js
 
-###Run tests in browser:
+### Run tests in browser:
 View runtests.html in any browser
 
-##Usage In Node
+## Usage In Node
 
 ```javascript
 var htmlparser = require("htmlparser");
@@ -29,7 +57,7 @@ parser.parseComplete(rawHtml);
 sys.puts(sys.inspect(handler.dom, false, null));
 ```
 
-##Usage In Browser
+## Usage In Browser
 
 ```javascript
 var handler = new Tautologistics.NodeHtmlParser.HtmlBuilder(function (error, dom) {
@@ -43,15 +71,19 @@ parser.parseComplete(document.body.innerHTML);
 alert(JSON.stringify(handler.dom, null, 2));
 ```
 
-##Example output
+## Example output
 
 ```javascript
 [ { raw: 'Xyz ', data: 'Xyz ', type: 'text' }
   , { raw: 'script language= javascript'
   , data: 'script language= javascript'
-  , type: 'script'
+  , type: 'tag'
   , name: 'script'
-  , attribs: { language: 'javascript' }
+  , attributes: { language: [{
+              data: 'javascript',
+              type: 'text'
+              }]
+	    }
   , children: 
      [ { raw: 'var foo = \'<bar>\';<'
        , data: 'var foo = \'<bar>\';<'
@@ -66,7 +98,7 @@ alert(JSON.stringify(handler.dom, null, 2));
 ]
 ```
 
-##Streaming To Parser
+## Streaming To Parser
 
 ```javascript
 while (...) {
@@ -76,13 +108,13 @@ while (...) {
 parser.done();	
 ```
 
-##Streaming To Parser in Node
+## Streaming To Parser in Node
 
 ```javascript
 fs.createReadStream('./path_to_file.html').pipe(parser);
 ```
 
-##Parsing RSS/Atom Feeds
+## Parsing RSS/Atom Feeds
 
 ```javascript
 new htmlparser.RssHandler(function (error, dom) {
@@ -90,21 +122,21 @@ new htmlparser.RssHandler(function (error, dom) {
 });
 ```
 
-##DefaultHandler Options
+## DefaultHandler Options
 
-###Usage
+### Usage
 
 ```javascript
-var handler = new htmlparser.DefaultHandler(
+var handler = new htmlparser.HtmlBuilder(
 	  function (error) { ... }
 	, { verbose: false, ignoreWhitespace: true }
 	);
 ```
 
-###Option: ignoreWhitespace
+### Option: ignoreWhitespace
 Indicates whether the DOM should exclude text nodes that consists solely of whitespace. The default value is "false".
 
-####Example: true
+#### Example: true
 
 The following HTML:
 
@@ -133,7 +165,7 @@ becomes:
 ]
 ```
 
-####Example: false
+#### Example: false
 
 The following HTML:
 
@@ -163,10 +195,10 @@ becomes:
 ]
 ```
 
-###Option: verbose
+### Option: verbose
 Indicates whether to include extra information on each node in the DOM. This information consists of the "raw" attribute (original, unparsed text found between "<" and ">") and the "data" attribute on "tag", "script", and "comment" nodes. The default value is "true". 
 
-####Example: true
+#### Example: true
 The following HTML:
 
 ```html
@@ -186,7 +218,7 @@ becomes:
 ]
 ```
 
-####Example: false
+#### Example: false
 The following HTML:
 
 ```javascript
@@ -204,10 +236,10 @@ becomes:
 ]
 ```
 
-###Option: enforceEmptyTags
+### Option: enforceEmptyTags
 Indicates whether the DOM should prevent children on tags marked as empty in the HTML spec. Typically this should be set to "true" HTML parsing and "false" for XML parsing. The default value is "true".
 
-####Example: true
+#### Example: true
 The following HTML:
 
 ```html
@@ -222,7 +254,7 @@ becomes:
 ]
 ```
 
-####Example: false
+#### Example: false
 The following HTML:
 
 ```html
@@ -241,11 +273,11 @@ becomes:
 ]
 ```
 
-##DomUtils
+## DomUtils
 
-###TBD (see utils_example.js for now)
+### TBD (see utils_example.js for now)
 
-##Related Projects
+## Related Projects
 
 Looking for CSS selectors to search the DOM? Try Node-SoupSelect, a port of SoupSelect to NodeJS: http://github.com/harryf/node-soupselect
 
