@@ -7,7 +7,7 @@ A forgiving HTML/XML/RSS parser written in JS for both the browser and NodeJS (y
 
 
 ## migration
-  # v1.7.6 -> v2.1
+  ### v1.7.6 -> v2.1
   * DefaultHandler -> HtmlBuilder
   
   * result field
@@ -96,6 +96,160 @@ alert(JSON.stringify(handler.dom, null, 2));
   , type: 'comment'
   }
 ]
+```
+
+## Example output
+### normal tag
+```html
+<div></div>
+```
+```javascript
+[{'type': 'tag','name': 'div'}]
+```
+### text
+```html
+Xyz 
+```
+```javascript
+[{type: 'text',data: 'Xyz '}]
+```
+### script tag
+```html
+<script language= javascript>var foo = '<<bar>>';</ script> 
+```
+```javascript
+[{
+  type: 'tag',
+  name: 'script',
+  attributes: {
+    language: [{
+      data: 'javascript',
+      type: 'text'
+    }]
+  },
+  children: [{
+    data: 'var foo = \'<<bar>>\';',
+    type: 'text'
+  }],
+}]
+```
+### Tag in tag
+```html
+<div><div>hoge</div></div>
+```
+```javascript
+[{
+  'type': 'tag',
+  'name': 'div',
+  'children': [{
+    'type': 'tag',
+    'name': 'div',
+    'children': [{
+      'type': 'text',
+      'data': 'hoge'
+    }]
+  }]
+}]
+```
+
+### comment tag
+```html
+<!-- Waah! --> 
+```
+```javascript
+[{data: ' Waah! ',type: 'comment'}]
+```
+
+### img tag
+```html
+<img src='hoge'>
+```
+```javascript
+[{
+  'type': 'tag',
+  'name': 'img',
+  attributes: {
+    src: [{
+      data: 'hoge',
+      type: 'text'
+    }]
+  }
+}]
+```
+
+### not container
+```html
+<div />
+```
+```javascript
+[{'type': 'tag', 'name': 'div'}]
+```
+
+## Example output v2.1
+
+### normal tag
+```html
+<div></div>
+```
+```javascript
+[{'type': 'tag','name': 'div',
+  'parentNode': parent object,
+  getElementById: function(id,recurse),
+  getElementsByTagName: function(id,recurse,limit),
+  getElementsByTagType: function(type,recurse,limit),
+  getElements: function(options, recurse, limit),
+  removeChild: function(element),
+  createElement: function(type),
+  appendChild: function(element),
+  getAttribute: function(name),
+  cloneElement: function(parentNode),
+}]
+```
+
+### mustache script tag
+```html
+{{#if true}}<div>{{hoge}}</div>{{/if}}
+```
+
+```javascript
+[{
+  'type': 'script',
+  'langName': 'mustache',
+  'name': 'if',
+  'data': 'true',
+  'children': [{
+    'type': 'tag',
+    'name': 'div',
+    'children': [{
+      'type': 'script',
+      'langName': 'mustache',
+      'data': 'hoge'
+    }]
+  }]
+}]
+```
+
+### singleMustache script tag
+```html
+{#if true}<div>{hoge}</div>{/if}
+```
+
+```javascript
+[{
+  'type': 'script',
+  'langName': 'singleMustache',
+  'name': 'if',
+  'data': 'true',
+  'children': [{
+    'type': 'tag',
+    'name': 'div',
+    'children': [{
+      'type': 'script',
+      'langName': 'singleMustache',
+      'data': 'hoge'
+    }]
+  }]
+}]
 ```
 
 ## Streaming To Parser
@@ -274,12 +428,59 @@ becomes:
 ```
 
 ## DomUtils
-
 ### TBD (see utils_example.js for now)
+### getElementById
+```javascript
+var id = htmlparser.DomUtils.getElementById("x", dom);
+```
+### getElementsByTagName
+```javascript
+var name = htmlparser.DomUtils.getElementsByTagName("a", dom);
+```
+### getElements
+```javascript
+var clazz = htmlparser.DomUtils.getElements({class: "y" }, dom);
+```
+```javascript
+var multiclass = htmlparser.DomUtils.getElements({
+          class: function(value) {
+            console.log(value);
+            return (value && value.indexOf("h") > -1);
+          }
+        }, dom);
+```
+### getElementsByTagType
+```javascript
+var nested = htmlparser.DomUtils.getElements({
+          tag_name: "d",
+          id: "z",
+          class: "w"
+        }, dom);
+```
+
+## DomUtils v2.1
+### getElementById
+```javascript
+var id = dom.getElementById("x");
+```
+### getElementsByTagName
+```javascript
+var name = dom.getElementsByTagName("a");
+```
+### getElements
+```javascript
+var clazz = dom.getElements({class: "y"});
+```
+### getElementsByTagType
+```javascript
+var nested = dom.getElements({ tag_name: "d", id: "z", class: "w" });
+```
+
 
 ## Related Projects
 
-Looking for CSS selectors to search the DOM? Try Node-SoupSelect, a port of SoupSelect to NodeJS: http://github.com/harryf/node-soupselect
+Loo
+king for CSS selectors to search the DOM? Try Node-SoupSelect, a port of SoupSelect to NodeJS: http://github.com/harryf/node-soupselect
 
 There's also a port of hpricot to NodeJS that uses HtmlParser for HTML parsing: http://github.com/silentrob/Apricot
 
