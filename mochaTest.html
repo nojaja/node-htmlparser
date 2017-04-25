@@ -38,7 +38,43 @@
   var should = chai.should();
 
   //Test Code
+  /*
+  migration guide
+  v1.7.6 -> v2.1
+  DefaultHandler -> HtmlBuilder
+  
+  result
+  attribs -> attributes
+  attribs:'data' -> attributes.data:'data'
+  
+  ex.
+  script tag
+        attribs: {
+            language: 'javascript'
+         },
+         
+          type: 'script'
+   ->
+        attributes: {
+            language: [{
+              data: 'javascript',
+              type: 'text'
+            }]
+         },
+         type: 'tag'       
+  */
+
   var htmlparser = Tautologistics.NodeHtmlParser;
+  
+  var parseHtml = function(rawHtml) {
+    return htmlparser.parseDOM(rawHtml,{
+      enforceEmptyTags: true,
+      ignoreWhitespace: true,
+      verbose: false
+    });
+  };
+
+  /*
   var handler = new htmlparser.HtmlBuilder(function(err, dom) {
     if (err) console.error(err);
   }, {
@@ -55,6 +91,37 @@
     //return toJson(handler.dom);
     return handler.dom;
   };
+  */
+ var wrapper = function(parseData) {
+    for (var key in parseData) {
+      if (key == 'attributes'){
+        parseData['attribs'] = {};
+        for (var _key in parseData[key]) {
+          var content = "";
+          parseData[key][_key].forEach( function(_row){
+            content = _row.data||'';
+          });
+          parseData['attribs'][_key] = content
+        }
+        delete parseData['attributes'];
+        
+       var _parseData = {};
+       for (var __key in parseData) {
+         if (typeof parseData[__key] !== undefined)
+         _parseData[__key] = parseData[__key];
+       }
+       parseData = _parseData;
+
+      }
+      if (key == 'name' && parseData[key]=='script'){
+        parseData['type'] = 'script';
+      }
+      if (typeof parseData[key] === 'object' && parseData[key] !== null) {
+        parseData[key] = wrapper(parseData[key]);
+      }
+    };
+   return parseData;
+  }
   var toJson = function(parseData) {
     var cache = [];
     return JSON.parse(JSON.stringify(parseData, function(key, value) {
@@ -69,7 +136,61 @@
       return value;
     }));
   }
-
+  describe('NodeHtmlParser v1.7.6', function() {
+    console.log(wrapper(toJson(parseHtml(
+          `<script language= javascript>var foo = '<<bar>>';</ script>`
+        ))));
+    describe('html', function() {
+      it('script tag', function() {
+        assert.deepEqual(wrapper(toJson(parseHtml(
+          `<script language= javascript>var foo = '<<bar>>';</ script>`
+        ))), [{
+          attribs: {
+            language: 'javascript'
+          },
+          children: [{
+            data: 'var foo = \'<<bar>>\';',
+            type: 'text'
+          }],
+          name: 'script',
+          type: 'script'
+        }]);
+        assert.deepEqual(wrapper(toJson(parseHtml(
+          `<script language='html'><div>test</div></ script>`
+        ))), [{
+          attribs: {
+            language: 'html'
+          },
+          children: [{
+            data: '<div>test</div>',
+            type: 'text'
+          }],
+          name: 'script',
+          type: 'script'
+        }]);
+      });
+      it('basic', function() {
+        assert.deepEqual(wrapper(toJson(parseHtml(
+          `Xyz <script language= javascript>var foo = '<<bar>>';</ script><!--<!-- Waah! -- -->`))), [{
+          type: 'text',
+          data: 'Xyz '
+        }, {
+          attribs: {
+            language: 'javascript'
+          },
+          children: [{
+            data: 'var foo = \'<<bar>>\';',
+            type: 'text'
+          }],
+          type: 'script',
+          name: 'script'
+        }, {
+          data: '<!-- Waah! -- ',
+          type: 'comment'
+        }]);
+      });
+    });
+  });
   describe('NodeHtmlParser v2.0', function() {
     describe('html', function() {
       it('normal tag', function() {
@@ -138,6 +259,91 @@
             name: 'font'
           }]
         }]);
+
+        assert.deepEqual(toJson(parseHtml(
+          `<select>
+<option>A</option>
+<option>B</option></select>`
+        )), [{
+          'type': 'tag',
+          'name': 'select',
+          'children': [{
+            'type': 'tag',
+            'name': 'option',
+            'children': [{
+              'type': 'text',
+              'data': 'A'
+            }]
+          }, {
+            'type': 'tag',
+            'name': 'option',
+            'children': [{
+              'type': 'text',
+              'data': 'B'
+            }]
+          }]
+        }]);
+
+        assert.deepEqual(toJson(parseHtml(
+          `<select>
+<option><p>A</p></option>
+<option><p>B</p></option></select>`
+        )), [{
+          'type': 'tag',
+          'name': 'select',
+          'children': [{
+            'type': 'tag',
+            'name': 'option',
+            'children': [{
+              'type': 'tag',
+              'name': 'p',
+              'children': [{
+                'type': 'text',
+                'data': 'A'
+              }]
+            }]
+          }, {
+            'type': 'tag',
+            'name': 'option',
+            'children': [{
+              'type': 'tag',
+              'name': 'p',
+              'children': [{
+                'type': 'text',
+                'data': 'B'
+              }]
+            }]
+          }]
+        }]);
+
+        assert.deepEqual(toJson(parseHtml(
+          `<select>
+<option><p>A</p></option>
+<option><input ></option></select>`
+        )), [{
+          'type': 'tag',
+          'name': 'select',
+          'children': [{
+            'type': 'tag',
+            'name': 'option',
+            'children': [{
+              'type': 'tag',
+              'name': 'p',
+              'children': [{
+                'type': 'text',
+                'data': 'A'
+              }]
+            }]
+          }, {
+            'type': 'tag',
+            'name': 'option',
+            'children': [{
+              'type': 'tag',
+              'name': 'input'
+            }]
+          }]
+        }]);
+
       });
       
       it('not container', function() {
@@ -146,6 +352,20 @@
         )), [{
           'type': 'tag',
           'name': 'div'
+        }]);
+      });
+      it('img tag', function() {
+        assert.deepEqual(toJson(parseHtml(
+          `<img src='hoge'>`
+        )), [{
+          'type': 'tag',
+          'name': 'img',
+          attributes: {
+            src: [{
+              data: 'hoge',
+              type: 'text'
+            }]
+          },
         }]);
       });
       it('text', function() {
@@ -166,6 +386,22 @@
           },
           children: [{
             data: 'var foo = \'<<bar>>\';',
+            type: 'text'
+          }],
+          name: 'script',
+          type: 'tag'
+        }]);
+        assert.deepEqual(toJson(parseHtml(
+          `<script language='html'><div>test</div></ script>`
+        )), [{
+          attributes: {
+            language: [{
+              data: 'html',
+              type: 'text'
+            }]
+          },
+          children: [{
+            data: '<div>test</div>',
             type: 'text'
           }],
           name: 'script',
@@ -192,7 +428,7 @@ Waah!
           type: 'comment'
         }]);
       });
-      it('basic', function() {
+      it('basic mix', function() {
         assert.deepEqual(toJson(parseHtml(
           `Xyz <script language= javascript>var foo = '<<bar>>';</ script><!--<!-- Waah! -- -->`)), [{
           type: 'text',
@@ -216,6 +452,37 @@ Waah!
         }]);
       });
 
+      it('Thymeleaf Like', function() {
+        assert.deepEqual(toJson(parseHtml(
+          `<p th:text="{id}"></p>`
+        )), [{
+          'type': 'tag',
+          'name': 'p',
+          attributes: {
+            'th:text': [{
+              data: 'id',
+              langName: 'singleMustache',
+              type: 'script'
+            }]
+          }
+        }]);
+        assert.deepEqual(toJson(parseHtml(
+          `<p th:text="'one ' + 'two ' + 'three ' + 'id = ' + {param.id[0]}"></p>`
+        )), [{
+          'type': 'tag',
+          'name': 'p',
+          attributes: {
+            'th:text': [{
+              data: "'one ' + 'two ' + 'three ' + 'id = ' + ",
+              type: 'text'
+            }, {
+              data: "param.id[0]",
+              langName: 'singleMustache',
+              type: 'script'
+            }]
+          }
+        }]);
+      });
     });
 
     describe('DomUtils', function() {
@@ -365,7 +632,10 @@ Waah!
       
       it('getElements( { tag_name: "yy", id: "secondyy" })', function() {
         var dom = toJson(parseHtml(html));
-        var single = htmlparser.DomUtils.getElements( { tag_name: "yy", id: "secondyy" }, dom);
+        var single = htmlparser.DomUtils.getElements({
+          tag_name: "yy",
+          id: "secondyy"
+        }, dom);
 
         assert.deepEqual(single, [ {
           'type': 'tag',
@@ -546,7 +816,7 @@ Waah!
 </script>
 </div>`;
       it('dom.getElementById("x")', function() {
-        var dom = parseHtml(html)[0];
+        var dom = parseHtml(html);
         var id = dom.getElementById("x");
         id = toJson(id);
         assert.deepEqual(id, {
@@ -566,7 +836,7 @@ Waah!
       });
 
       it('dom.getElementsByTagName("a")', function() {
-        var dom = parseHtml(html)[0];
+        var dom = parseHtml(html);
         var name = dom.getElementsByTagName("a");
         name = toJson(name);
         assert.deepEqual(name, [{
@@ -580,7 +850,7 @@ Waah!
       });
 
       it('dom.getElements({ class: "y" })', function() {
-        var dom = parseHtml(html)[0];
+        var dom = parseHtml(html);
         var clazz = dom.getElements({
           class: "y"
         });
@@ -602,7 +872,7 @@ Waah!
       });
 
       it('dom.getElements({ class: function (value) {console.log(value); return(value && value.indexOf("h") > -1); } })', function() {
-        var dom = parseHtml(html)[0];
+        var dom = parseHtml(html);
         var multiclass = dom.getElements({
           class: function(value) {
             console.log(value);
@@ -627,7 +897,7 @@ Waah!
       });
 
       it('dom.getElementsByTagType("text")', function() {
-        var dom = parseHtml(html)[0];
+        var dom = parseHtml(html);
         var text = dom.getElementsByTagType("text");
         text = toJson(text);
         assert.deepEqual(text[0], {
@@ -637,15 +907,15 @@ Waah!
       });
 
       it('dom.getElements({ tag_name: "d", id: "z", class: "w" })', function() {
-        var dom = parseHtml(html)[0];
+        var dom = parseHtml(html);
         var nested = dom.getElements({
           tag_name: "d",
           id: "z",
           class: "w"
         });
-        nested = nested[0].getElementsByTagName("e");
-        nested = nested[0].getElementsByTagType("text");
-        //nested = toJson(nested);
+        nested = nested.getElementsByTagName("e");
+        nested = nested.getElementsByTagType("text");
+        nested = toJson(nested);
         assert.deepEqual(nested, [{
           'type': 'text',
           'data': 'text e'
@@ -653,7 +923,7 @@ Waah!
       });
 
       it('dom.getElementsByTagType("yy")', function() {
-        var dom = parseHtml(html)[0];
+        var dom = parseHtml(html);
         var double = dom.getElementsByTagName("yy");
         double = toJson(double);
         assert.deepEqual(double, [{
@@ -681,8 +951,11 @@ Waah!
 
       
       it('dom.getElements( { tag_name: "yy", id: "secondyy" })', function() {
-        var dom = parseHtml(html)[0];
-        var single = dom.getElements( { tag_name: "yy", id: "secondyy" });
+        var dom = parseHtml(html);
+        var single = dom.getElements({
+          tag_name: "yy",
+          id: "secondyy"
+        });
         single = toJson(single);
         assert.deepEqual(single, [ {
           'type': 'tag',
