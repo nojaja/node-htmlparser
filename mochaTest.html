@@ -1007,6 +1007,19 @@ Waah!
         }]);
       });
 
+      it('dom.removeChildAll("x")', function() {
+        var dom = parseHtml(html);
+        var nested = dom.getElementsByTagName("html");
+        nested[0].removeChildAll();
+        dom = toJson(dom);
+        console.log(dom);
+        assert.deepEqual(dom, [{
+          'children': [],
+          'name': 'html',
+          'type': 'tag'
+        }]);
+      });
+
     });
 
 
