@@ -21,7 +21,7 @@
     mocha.run();
   }
 </script>
-    
+
 <script src='https://cdnjs.cloudflare.com/ajax/libs/mocha/2.2.5/mocha.min.js'></script>
 <script src='https://cdnjs.cloudflare.com/ajax/libs/chai/2.3.0/chai.min.js'></script>
 <script src='http://codepen.io/nojaja/pen/GjzRga.js'></script>
@@ -42,17 +42,17 @@
   migration guide
   v1.7.6 -> v2.1
   DefaultHandler -> HtmlBuilder
-  
+
   result
   attribs -> attributes
   attribs:'data' -> attributes.data:'data'
-  
+
   ex.
   script tag
         attribs: {
             language: 'javascript'
          },
-         
+
           type: 'script'
    ->
         attributes: {
@@ -61,11 +61,11 @@
               type: 'text'
             }]
          },
-         type: 'tag'       
+         type: 'tag'
   */
 
   var htmlparser = Tautologistics.NodeHtmlParser;
-  
+
   var parseHtml = function(rawHtml) {
     return htmlparser.parseDOM(rawHtml,{
       enforceEmptyTags: true,
@@ -104,7 +104,7 @@
           parseData['attribs'][_key] = content
         }
         delete parseData['attributes'];
-        
+
        var _parseData = {};
        for (var __key in parseData) {
          if (typeof parseData[__key] !== undefined)
@@ -345,7 +345,7 @@
         }]);
 
       });
-      
+
       it('not container', function() {
         assert.deepEqual(toJson(parseHtml(
           `<div />`
@@ -629,7 +629,7 @@ Waah!
         }]);
       });
 
-      
+
       it('getElements( { tag_name: "yy", id: "secondyy" })', function() {
         var dom = toJson(parseHtml(html));
         var single = htmlparser.DomUtils.getElements({
@@ -652,8 +652,8 @@ Waah!
           }]
         }]);
       });
-      
-      
+
+
     });
 
   });
@@ -794,9 +794,9 @@ Waah!
         }]);
       });
     });
-    
+
     ////////////
-    
+
     describe('DomUtils', function() {
       var html =
         `<div>
@@ -949,7 +949,7 @@ Waah!
         }]);
       });
 
-      
+
       it('dom.getElements( { tag_name: "yy", id: "secondyy" })', function() {
         var dom = parseHtml(html);
         var single = dom.getElements({
@@ -957,6 +957,7 @@ Waah!
           id: "secondyy"
         });
         single = toJson(single);
+        console.log("getElements",single);
         assert.deepEqual(single, [ {
           'type': 'tag',
           'name': 'yy',
@@ -972,16 +973,48 @@ Waah!
           }]
         }]);
       });
-      
-      
+
+
     });
 
-    
+
     //////////
   });
+
+  describe('NodeHtmlParser v2.2', function() {
+    ////////////
+    describe('DomUtils', function() {
+      var html =
+ `<html>
+  <body></body>
+  </html>`;
+      it('dom.appendChild("x")', function() {
+        var dom = parseHtml(html);
+        var nested = dom.getElementsByTagName("html");
+        var newElement = nested[0].createElement('head');
+        nested[0].appendChild(newElement);
+        dom = toJson(dom);
+        assert.deepEqual(dom, [{
+          'children': [{
+            'name': 'body',
+            'type': 'tag'
+          },{
+            'name': 'head',
+            'type': 'tag'
+          }],
+          'name': 'html',
+          'type': 'tag'
+        }]);
+      });
+
+    });
+
+
+    //////////
+  });
+
 })();
       //# sourceURL=pen.js
     </script>
   </body>
 </html>
- 
