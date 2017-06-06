@@ -957,7 +957,6 @@ Waah!
           id: "secondyy"
         });
         single = toJson(single);
-        console.log("getElements",single);
         assert.deepEqual(single, [ {
           'type': 'tag',
           'name': 'yy',
@@ -982,6 +981,54 @@ Waah!
   });
 
   describe('NodeHtmlParser v2.2', function() {
+    describe('html', function() {
+      it('no value attributes', function() {
+        var html =
+   `<a data-uk-offcanvas></a>
+  <div className="uk-navbar-brand"></div>
+  `;
+        var dom = parseHtml(html);
+        dom = toJson(dom);
+        console.log(dom)
+        assert.deepEqual(dom, [{
+          'type': 'tag',
+          'name': 'a',
+          'attributes': {
+            'data-uk-offcanvas': []
+          },
+        },{
+          'type': 'tag',
+          'name': 'div',
+          'attributes': {
+            'classname':[{
+              'data': 'uk-navbar-brand',
+              'type': 'text'
+            }]
+          },
+        }]);
+      });
+
+
+        it(' attributes', function() {
+          var html =
+      `<a rel="nofollow" rel="noreferrer"></a>`;
+          var dom = parseHtml(html);
+          dom = toJson(dom);
+          console.log(dom)
+          assert.deepEqual(dom, [{
+            'type': 'tag',
+            'name': 'a',
+            'attributes': {
+              'rel':[{
+                'data': 'noreferrer',
+                'type': 'text'
+              }],
+            },
+          }]);
+        });
+
+    });
+
     ////////////
     describe('DomUtils', function() {
       var html =
@@ -1012,7 +1059,6 @@ Waah!
         var nested = dom.getElementsByTagName("html");
         nested[0].removeChildAll();
         dom = toJson(dom);
-        console.log(dom);
         assert.deepEqual(dom, [{
           'children': [],
           'name': 'html',
