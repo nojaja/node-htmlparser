@@ -23,7 +23,7 @@
 </script>
 
 <script src='https://cdnjs.cloudflare.com/ajax/libs/mocha/2.2.5/mocha.min.js'></script>
-<script src='https://cdnjs.cloudflare.com/ajax/libs/chai/2.3.0/chai.min.js'></script>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/chai/3.0.0/chai.min.js'></script>
 <script src='http://codepen.io/nojaja/pen/GjzRga.js'></script>
 
         <script>
@@ -66,7 +66,7 @@
 
   var htmlparser = Tautologistics.NodeHtmlParser;
 
-  var parseHtml = function(rawHtml) {
+  var parseHtml2 = function(rawHtml) {
     return htmlparser.parseDOM(rawHtml,{
       enforceEmptyTags: true,
       ignoreWhitespace: true,
@@ -74,7 +74,6 @@
     });
   };
 
-  /*
   var handler = new htmlparser.HtmlBuilder(function(err, dom) {
     if (err) console.error(err);
   }, {
@@ -91,7 +90,7 @@
     //return toJson(handler.dom);
     return handler.dom;
   };
-  */
+
  var wrapper = function(parseData) {
     for (var key in parseData) {
       if (key == 'attributes'){
@@ -124,7 +123,7 @@
   }
   var toJson = function(parseData) {
     var cache = [];
-    return JSON.parse(JSON.stringify(parseData, function(key, value) {
+    var tmp = JSON.stringify(parseData, function(key, value) {
       if (key == 'parentNode') return;
       if (typeof value === 'object' && value !== null) {
         if (cache.indexOf(value) !== -1) { // Circular reference found, discard key
@@ -134,7 +133,9 @@
         cache.push(value);
       }
       return value;
-    }));
+    });
+    console.log(tmp);
+    return JSON.parse(tmp);
   }
   describe('NodeHtmlParser v1.7.6', function() {
     console.log(wrapper(toJson(parseHtml(
@@ -660,26 +661,46 @@ Waah!
 
   describe('NodeHtmlParser v2.1', function() {
     describe('html', function() {
+      it('basic', function() {
+        assert.deepEqual(wrapper(toJson(parseHtml2(
+          `Xyz <script language= javascript>var foo = '<<bar>>';</ script><!--<!-- Waah! -- -->`).children)), [{
+          type: 'text',
+          data: 'Xyz '
+        }, {
+          attribs: {
+            language: 'javascript'
+          },
+          children: [{
+            data: 'var foo = \'<<bar>>\';',
+            type: 'text'
+          }],
+          type: 'script',
+          name: 'script'
+        }, {
+          data: '<!-- Waah! -- ',
+          type: 'comment'
+        }]);
+      });
       it('template script ', function() {
 
-        assert.deepEqual(toJson(parseHtml(
+        assert.deepEqual(toJson(parseHtml2(
           `{hoge}`
-        )), [{
+        ).children), [{
           'type': 'script',
           'langName': 'singleMustache',
           'data': 'hoge'
         }]);
-        assert.deepEqual(toJson(parseHtml(
+        assert.deepEqual(toJson(parseHtml2(
           `{{hoge}}`
-        )), [{
+        ).children), [{
           'type': 'script',
           'langName': 'mustache',
           'data': 'hoge'
         }]);
 
-        assert.deepEqual(toJson(parseHtml(
+        assert.deepEqual(toJson(parseHtml2(
           `{hoge}hoge{{hoge}}`
-        )), [{
+        ).children), [{
           'type': 'script',
           'langName': 'singleMustache',
           'data': 'hoge'
@@ -692,27 +713,27 @@ Waah!
           'data': 'hoge'
         }]);
 
-        assert.deepEqual(toJson(parseHtml(
+        assert.deepEqual(toJson(parseHtml2(
           `{!comment}`
-        )), [{
+        ).children), [{
           'type': 'comment',
           'name': '!',
           'langName': 'singleMustache',
           'data': 'comment'
         }]);
 
-        assert.deepEqual(toJson(parseHtml(
+        assert.deepEqual(toJson(parseHtml2(
           `{{!comment}}`
-        )), [{
+        ).children), [{
           'type': 'comment',
           'name': '!',
           'langName': 'mustache',
           'data': 'comment'
         }]);
 
-        assert.deepEqual(toJson(parseHtml(
+        assert.deepEqual(toJson(parseHtml2(
           `<div>{hoge}</div>`
-        )), [{
+        ).children), [{
           'type': 'tag',
           'name': 'div',
           'children': [{
@@ -721,9 +742,9 @@ Waah!
             'data': 'hoge'
           }]
         }]);
-        assert.deepEqual(toJson(parseHtml(
+        assert.deepEqual(toJson(parseHtml2(
           `<div>{{hoge}}</div>`
-        )), [{
+        ).children), [{
           'type': 'tag',
           'name': 'div',
           'children': [{
@@ -733,9 +754,57 @@ Waah!
           }]
         }]);
 
-        assert.deepEqual(toJson(parseHtml(
+        assert.deepEqual(toJson(parseHtml2(
+          `<div onClick={this.props.onPress}></div>`
+        ).children), [{
+          'type': 'tag',
+          'name': 'div',
+          'attributes':{
+            'onclick' : [{
+              'type': 'script',
+              'langName': 'singleMustache',
+              'data': 'this.props.onPress'
+            }
+          ]}
+        }]);
+
+        assert.deepEqual(toJson(parseHtml2(
+          `<div class="test{hoge}"></div>`
+        ).children), [{
+          'type': 'tag',
+          'name': 'div',
+          'attributes':{
+            'class' : [{
+              'type': 'text',
+              'data': 'test'
+            },{
+              'type': 'script',
+              'langName': 'singleMustache',
+              'data': 'hoge'
+            }
+        ]}
+        }]);
+
+        assert.deepEqual(toJson(parseHtml2(
+          `<button className='calculator-key {this.props.className}'/>`
+        ).children), [{
+          'type': 'tag',
+          'name': 'button',
+          'attributes':{
+            'classname' : [{
+              'type': 'text',
+              'data': 'calculator-key '
+            },{
+              'type': 'script',
+              'langName': 'singleMustache',
+              'data': 'this.props.className'
+            }
+          ]}
+        }]);
+
+        assert.deepEqual(toJson(parseHtml2(
           `{{#if true}}<div>{{hoge}}</div>{{/if}}`
-        )), [{
+        ).children), [{
           'data': 'true',
           'langName': 'mustache',
           'type': 'script',
@@ -751,9 +820,9 @@ Waah!
           }]
         }]);
 
-        assert.deepEqual(toJson(parseHtml(
+        assert.deepEqual(toJson(parseHtml2(
           `{#if this.props.count > 1}<div if='{message}'>hoge</div>{{/if}}`
-        )), [{
+        ).children), [{
           'data': 'this.props.count > 1',
           'langName': 'singleMustache',
           'type': 'script',
@@ -775,9 +844,9 @@ Waah!
           }]
         }]);
 
-        assert.deepEqual(toJson(parseHtml(
+        assert.deepEqual(toJson(parseHtml2(
           `{#if true}<div>{hoge}</div>{/if}`
-        )), [{
+        ).children), [{
           'data': 'true',
           'langName': 'singleMustache',
           'type': 'script',
@@ -816,7 +885,7 @@ Waah!
 </script>
 </div>`;
       it('dom.getElementById("x")', function() {
-        var dom = parseHtml(html);
+        var dom = parseHtml2(html);
         var id = dom.getElementById("x");
         id = toJson(id);
         assert.deepEqual(id, {
@@ -836,7 +905,7 @@ Waah!
       });
 
       it('dom.getElementsByTagName("a")', function() {
-        var dom = parseHtml(html);
+        var dom = parseHtml2(html);
         var name = dom.getElementsByTagName("a");
         name = toJson(name);
         assert.deepEqual(name, [{
@@ -850,7 +919,7 @@ Waah!
       });
 
       it('dom.getElements({ class: "y" })', function() {
-        var dom = parseHtml(html);
+        var dom = parseHtml2(html);
         var clazz = dom.getElements({
           class: "y"
         });
@@ -872,7 +941,7 @@ Waah!
       });
 
       it('dom.getElements({ class: function (value) {console.log(value); return(value && value.indexOf("h") > -1); } })', function() {
-        var dom = parseHtml(html);
+        var dom = parseHtml2(html);
         var multiclass = dom.getElements({
           class: function(value) {
             console.log(value);
@@ -897,7 +966,7 @@ Waah!
       });
 
       it('dom.getElementsByTagType("text")', function() {
-        var dom = parseHtml(html);
+        var dom = parseHtml2(html);
         var text = dom.getElementsByTagType("text");
         text = toJson(text);
         assert.deepEqual(text[0], {
@@ -907,14 +976,14 @@ Waah!
       });
 
       it('dom.getElements({ tag_name: "d", id: "z", class: "w" })', function() {
-        var dom = parseHtml(html);
+        var dom = parseHtml2(html);
         var nested = dom.getElements({
           tag_name: "d",
           id: "z",
           class: "w"
         });
-        nested = nested.getElementsByTagName("e");
-        nested = nested.getElementsByTagType("text");
+        nested = nested[0].getElementsByTagName("e");
+        nested = nested[0].getElementsByTagType("text");
         nested = toJson(nested);
         assert.deepEqual(nested, [{
           'type': 'text',
@@ -923,7 +992,7 @@ Waah!
       });
 
       it('dom.getElementsByTagType("yy")', function() {
-        var dom = parseHtml(html);
+        var dom = parseHtml2(html);
         var double = dom.getElementsByTagName("yy");
         double = toJson(double);
         assert.deepEqual(double, [{
@@ -951,7 +1020,7 @@ Waah!
 
 
       it('dom.getElements( { tag_name: "yy", id: "secondyy" })', function() {
-        var dom = parseHtml(html);
+        var dom = parseHtml2(html);
         var single = dom.getElements({
           tag_name: "yy",
           id: "secondyy"
@@ -982,14 +1051,34 @@ Waah!
 
   describe('NodeHtmlParser v2.2', function() {
     describe('html', function() {
+      it('style', function() {
+        var html =
+   `<div style="background: url('data:image/svg+xml;base64,abcdef') 50% 0 no-repeat; height: 450px;">
+    </div>
+    `;
+          var dom = parseHtml2(html);
+          dom = toJson(dom.children);
+          console.log('style',dom)
+          assert.deepEqual(dom, [{
+            'type': 'tag',
+            'name': 'div',
+            'attributes': {
+              'style': [{
+                'data': "background: url('data:image/svg+xml;base64,abcdef') 50% 0 no-repeat; height: 450px;",
+                'type': 'text'
+              }]
+            }
+          }]);
+        });
+
       it('no value attributes', function() {
         var html =
    `<a data-uk-offcanvas></a>
   <div className="uk-navbar-brand"></div>
   `;
-        var dom = parseHtml(html);
-        dom = toJson(dom);
-        console.log(dom)
+        var dom = parseHtml2(html);
+        dom = toJson(dom.children);
+        console.log('no value attributes',dom)
         assert.deepEqual(dom, [{
           'type': 'tag',
           'name': 'a',
@@ -1008,13 +1097,34 @@ Waah!
         }]);
       });
 
+      it('wbr tag', function() {
+        var html =
+    `<p>abc<wbr>def</p>`;
+        var dom = parseHtml2(html);
+        dom = toJson(dom.children);
+        console.log('wbr tag',dom)
+        assert.deepEqual(dom, [{
+          'type': 'tag',
+          'name': 'p',
+          'children':[{
+            'type': 'text',
+            'data': 'abc'
+          },{
+            'type': 'tag',
+            'name':"wbr"
+          },{
+            'type': 'text',
+            'data': 'def'
+          }]
+        }]);
+      });
 
-        it(' attributes', function() {
+        it('Duplicate attributes', function() {
           var html =
       `<a rel="nofollow" rel="noreferrer"></a>`;
-          var dom = parseHtml(html);
-          dom = toJson(dom);
-          console.log(dom)
+          var dom = parseHtml2(html);
+          dom = toJson(dom.children);
+          console.log('Duplicate attributes',dom)
           assert.deepEqual(dom, [{
             'type': 'tag',
             'name': 'a',
@@ -1027,6 +1137,23 @@ Waah!
           }]);
         });
 
+        it('Mixed type values', function() {
+          var html =
+      `<a className="nofollow {hoge}"></a>`;
+          var dom = parseHtml2(html);
+          dom = toJson(dom.children);
+          console.log('Mixed type values',dom)
+          assert.deepEqual(dom, [{
+            'type': 'tag',
+            'name': 'a',
+            'attributes': {
+              'rel':[{
+                'data': 'noreferrer',
+                'type': 'text'
+              }],
+            },
+          }]);
+        });
     });
 
     ////////////
@@ -1036,11 +1163,11 @@ Waah!
   <body></body>
   </html>`;
       it('dom.appendChild("x")', function() {
-        var dom = parseHtml(html);
+        var dom = parseHtml2(html);
         var nested = dom.getElementsByTagName("html");
         var newElement = nested[0].createElement('head');
         nested[0].appendChild(newElement);
-        dom = toJson(dom);
+        dom = toJson(dom.children);
         assert.deepEqual(dom, [{
           'children': [{
             'name': 'body',
@@ -1054,11 +1181,11 @@ Waah!
         }]);
       });
 
-      it('dom.removeChildAll("x")', function() {
-        var dom = parseHtml(html);
+      it('dom.removeChildAll()', function() {
+        var dom = parseHtml2(html);
         var nested = dom.getElementsByTagName("html");
         nested[0].removeChildAll();
-        dom = toJson(dom);
+        dom = toJson(dom.children);
         assert.deepEqual(dom, [{
           'children': [],
           'name': 'html',
