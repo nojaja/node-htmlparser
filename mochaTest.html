@@ -125,6 +125,8 @@
     var cache = [];
     var tmp = JSON.stringify(parseData, function(key, value) {
       if (key == 'parentNode') return;
+      if (key == 'attribs') return value;
+      if (key == 'nextSibling') return;
       if (typeof value === 'object' && value !== null) {
         if (cache.indexOf(value) !== -1) { // Circular reference found, discard key
           return;
@@ -134,11 +136,17 @@
       }
       return value;
     });
-    console.log(tmp);
+    //console.log(tmp);
     return JSON.parse(tmp);
   }
   describe('NodeHtmlParser v1.7.6', function() {
-    console.log(wrapper(toJson(parseHtml(
+    console.log("wrapper",wrapper(toJson(parseHtml(
+          `<script language= javascript>var foo = '<<bar>>';</ script>`
+        ))));
+    console.log("toJson",(toJson(parseHtml(
+          `<script language= javascript>var foo = '<<bar>>';</ script>`
+        ))));
+    console.log("row",((parseHtml(
           `<script language= javascript>var foo = '<<bar>>';</ script>`
         ))));
     describe('html', function() {
@@ -1042,6 +1050,23 @@ Waah!
         }]);
       });
 
+      it('dom.nextSibling ', function() {
+        html =
+          `<div><div id="x">text a</div><div>text b</div></div>`;
+        var dom = parseHtml2(html);
+        var one = dom.getElementById("x");
+        var two = one.nextSibling;
+        two = toJson(two);
+        console.log("two",two);
+        assert.deepEqual(two,  {
+          'type': 'tag',
+          'name': 'div',
+          'children': [{
+            'type': 'text',
+            'data': 'text b'
+          }]
+        });
+      });
 
     });
 
