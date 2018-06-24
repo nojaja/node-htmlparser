@@ -139,6 +139,17 @@
     //console.log(tmp);
     return JSON.parse(tmp);
   }
+
+    console.log("function1",wrapper(toJson(
+       parseHtml(
+          `<div onPress={this.inputDigit(0)}></div>`
+        ))));
+
+    console.log("function2",wrapper(toJson(
+       parseHtml(
+          `<div onPress={> this.inputDigit(0)}></div>`
+        ))));
+
   describe('NodeHtmlParser v1.7.6', function() {
     console.log("wrapper",wrapper(toJson(parseHtml(
           `<script language= javascript>var foo = '<<bar>>';</ script>`
@@ -197,6 +208,46 @@
           data: '<!-- Waah! -- ',
           type: 'comment'
         }]);
+
+
+    console.log("function1",wrapper(toJson(parseHtml(
+          `<div onPress={this.inputDigit(0)}></div>`
+        ))));
+
+    console.log("function2",wrapper(toJson(parseHtml(
+          `<div onPress={> this.inputDigit(0)}></div>`
+        ))));
+    console.log("function2",wrapper(toJson(parseHtml(
+          `<div onPress={= this.inputDigit(0)}></div>`
+        ))));
+    console.log("function2",wrapper(toJson(parseHtml(
+          `<div onPress={) = this.inputDigit(0)}></div>`
+        ))));
+    console.log("function2",wrapper(toJson(parseHtml(
+          `<div onPress={( this.inputDigit(0)}></div>`
+        ))));
+    console.log("function2",wrapper(toJson(parseHtml(
+          `<div onPress={() => this.inputDigit(0)}></div>`
+        ))));
+
+        assert.deepEqual(wrapper(toJson(parseHtml(
+          `<div onPress={this.inputDigit(0)}></div>`))), [{
+          type: 'tag',
+          name: 'div',
+          attribs: {
+            onpress: 'this.inputDigit(0)'
+          }
+        }]);
+
+        assert.deepEqual(wrapper(toJson(parseHtml(
+          `<div onPress={() => this.inputDigit(0)}></div>`))), [{
+          type: 'tag',
+          name: 'div',
+          attribs: {
+            onpress: '() => this.inputDigit(0)'
+          }
+        }]);
+
       });
     });
   });
