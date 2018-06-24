@@ -77,6 +77,7 @@ IN THE SOFTWARE.
   }, this);
 
   class Parser {
+    //Properties//
     writable = true;
 
     constructor(builder, options) {
@@ -89,7 +90,6 @@ IN THE SOFTWARE.
       this._builder = builder;
       this.reset();
 
-      this.writable = true;
       let parseText = new ParseText(this);
       this._parseText = parseText._parseText;
       let parseScript = new ParseScript(this);
@@ -106,13 +106,13 @@ IN THE SOFTWARE.
       this._parseComment = parseComment._parseComment;
    
     }
+    //**Public**//
     write(data) {
       if (data instanceof Buffer) {
         data = data.toString();
       }
       this.parseChunk(data);
     }
-
     end(data) {
       if (arguments.length) {
         this.write(data);
@@ -120,11 +120,9 @@ IN THE SOFTWARE.
       this.writable = false;
       this.done();
     }
-
     destroy() {
       this.writable = false;
     }
-    //**Public**//
     reset() {
       this._state = {
         mode: Mode.Text,
@@ -145,7 +143,6 @@ IN THE SOFTWARE.
       };
       this._builder.reset();
     }
-
     parseChunk(chunk) {
       this._state.needData = false;
       this._state.data =
@@ -159,7 +156,6 @@ IN THE SOFTWARE.
         this._parse(this._state);
       }
     }
-
     parseComplete(data) {
       if (!data) return;
       this.reset();
@@ -171,7 +167,6 @@ IN THE SOFTWARE.
       this.parseChunk(data);
       this.done();
     }
-
     done() {
       this._state.done = true;
       this._parse(this._state);
@@ -197,7 +192,6 @@ IN THE SOFTWARE.
         throw new Error("Builder method 'error' is invalid");
       }
     }
-
     _parse() {
       switch (this._state.mode) {
         case Mode.Text:
@@ -216,14 +210,12 @@ IN THE SOFTWARE.
           return this._parseComment(this._state);
       }
     }
-
     _writePending(node) {
       if (!this._state.pendingWrite) {
         this._state.pendingWrite = [];
       }
       this._state.pendingWrite.push(node);
     }
-
     _flushWrite() {
       if (this._state.pendingWrite) {
         for (var i = 0, len = this._state.pendingWrite.length; i < len; i++) {
@@ -233,7 +225,6 @@ IN THE SOFTWARE.
         this._state.pendingWrite = null;
       }
     }
-
     _write(node) {
       this._flushWrite();
       this._builder.write(node);
@@ -703,15 +694,36 @@ IN THE SOFTWARE.
   }
 
   class HtmlBuilder {
+   //Properties//
+   _options = null; //Builder options for how to behave
+   _callback = null; //Callback to respond to when parsing done
+   _done = false; //Flag indicating whether builder has been notified of parsing completed
+   _tagStack = null; //List of parents to the currently element being processed
+   dom = null; //The hierarchical object containing the parsed HTML
+
+   //HTML Tags that shouldn't contain child nodes
+   _emptyTags = {
+        area: 1,
+        base: 1,
+        basefont: 1,
+        br: 1,
+        col: 1,
+        frame: 1,
+        hr: 1,
+        img: 1,
+        input: 1,
+        isindex: 1,
+        link: 1,
+        meta: 1,
+        param: 1,
+        embed: 1,
+        "?xml": 1,
+        wbr: 1
+      };
+      //Regex to detect whitespace only text nodes
+      reWhitespace = /^\s*$/;
 
     constructor(callback, options) {
-      //Properties//
-      this._options = null; //Builder options for how to behave
-      this._callback = null; //Callback to respond to when parsing done
-      this._done = false; //Flag indicating whether builder has been notified of parsing completed
-      this._tagStack = null; //List of parents to the currently element being processed
-
-      
       this.reset();
       if (typeof callback == "function") {
         this._callback = callback;
@@ -737,30 +749,6 @@ IN THE SOFTWARE.
       if (this._options.caseSensitiveAttr === undefined) {
         this._options.caseSensitiveAttr = false; //Lowercase all attribute names
       }
-        //HTML Tags that shouldn't contain child nodes
-      this._emptyTags = {
-        area: 1,
-        base: 1,
-        basefont: 1,
-        br: 1,
-        col: 1,
-        frame: 1,
-        hr: 1,
-        img: 1,
-        input: 1,
-        isindex: 1,
-        link: 1,
-        meta: 1,
-        param: 1,
-        embed: 1,
-        "?xml": 1,
-        wbr: 1
-      };
-        //Regex to detect whitespace only text nodes
-      this.reWhitespace = /^\s*$/;
-      //Properties//
-      this.dom = null; //The hierarchical object containing the parsed HTML
-
     }
     //Methods//
     //Resets the builder back to starting state
@@ -787,9 +775,7 @@ IN THE SOFTWARE.
       this.handleCallback(error);
     };
 
-    handleCallback(
-      error
-    ) {
+    handleCallback(error) {
       if (typeof this._callback != "function") {
         if (error) {
           throw error;
@@ -816,9 +802,7 @@ IN THE SOFTWARE.
     };
 
     // HtmlBuilder.reLineSplit = /(\r\n|\r|\n)/g;
-    _updateLocation(
-      node
-    ) {
+    _updateLocation(node) {
       var positionData = node.type === Mode.Tag ? node.raw : node.data;
       if (positionData === null) {
         return;
@@ -839,230 +823,93 @@ IN THE SOFTWARE.
       }
     };
     
-  _copyElement(element, parentNode) {
-    //var newElement = { type: element.type, parentNode: parentNode};
-    var newElement = new Element(element.type, parentNode);
+    _copyElement(element, parentNode) {
+      //var newElement = { type: element.type, parentNode: parentNode};
+      var newElement = new Element(element.type, parentNode);
 
-    if (this._options.verbose && element["raw"] !== undefined) {
-      newElement.raw = element.raw;
-    }
-    if (element["name"] !== undefined) {
-      switch (element.type) {
-        case Mode.Tag:
-          newElement.name = this._options.caseSensitiveTags
-            ? element.name
-            : element.name.toLowerCase();
-          break;
-
-        case Mode.Attr:
-          newElement.name = this._options.caseSensitiveAttr
-            ? element.name
-            : element.name.toLowerCase();
-          break;
-
-        default:
-          newElement.name = this._options.caseSensitiveTags
-            ? element.name
-            : element.name.toLowerCase();
-          break;
+      if (this._options.verbose && element["raw"] !== undefined) {
+        newElement.raw = element.raw;
       }
-    }
-    if (element["data"] !== undefined) {
-      TagType.forEach(function(tagtype) {
-        element.data = element.data
-          .replace(new RegExp(tagtype.openCode, "g"), tagtype.open)
-          .replace(new RegExp(tagtype.closeCode, "g"), tagtype.close);
-      }, this);
-      newElement.data = element.data;
-    }
+      if (element["name"] !== undefined) {
+        switch (element.type) {
+          case Mode.Tag:
+            newElement.name = this._options.caseSensitiveTags
+              ? element.name
+              : element.name.toLowerCase();
+            break;
 
-    if (element["langName"] !== undefined) {
-      newElement.langName = element.langName;
-    }
+          case Mode.Attr:
+            newElement.name = this._options.caseSensitiveAttr
+              ? element.name
+              : element.name.toLowerCase();
+            break;
 
-    if (element.location) {
-      newElement.location = {
-        line: element.location.line,
-        col: element.location.col
-      };
-    }
-
-    return newElement;
-  };
-
-  write(element) {
-    // this._raw.push(element);
-    if (this._done) {
-      this.handleCallback(
-        new Error(
-          "Writing to the builder after done() called is not allowed without a reset()"
-        )
-      );
-    }
-    if (this._options.includeLocation) {
-      if (element.type !== Mode.Attr) {
-        element.location = this._getLocation();
-        this._updateLocation(element);
-      }
-    }
-    if (element.type === Mode.Text && this._options.ignoreWhitespace) {
-      if (this.reWhitespace.test(element.data)) {
-        return;
-      }
-    }
-    var parent;
-    var node;
-    if (!this._tagStack.last()) {
-      //There are no parent elements
-      //If the element can be a container, add it to the tag stack and the top level list
-      if (element.type === Mode.Tag) {
-        if (element.name.charAt(0) != "/") {
-          //Ignore closing tags that obviously don't have an opening tag
-          node = this._copyElement(element);
-          this.dom.push(node);
-          if (!this.isEmptyTag(node)) {
-            //Don't add tags to the tag stack that can't have children
-            this._tagStack.push(node);
-          }
-          this._lastTag = node;
+          default:
+            newElement.name = this._options.caseSensitiveTags
+              ? element.name
+              : element.name.toLowerCase();
+            break;
         }
-      } else if (element.type === Mode.Attr && this._lastTag) {
-        if (!this._lastTag.attributes) {
-          this._lastTag.attributes = {};
+      }
+      if (element["data"] !== undefined) {
+        TagType.forEach(function(tagtype) {
+          element.data = element.data
+            .replace(new RegExp(tagtype.openCode, "g"), tagtype.open)
+            .replace(new RegExp(tagtype.closeCode, "g"), tagtype.close);
+        }, this);
+        newElement.data = element.data;
+      }
+
+      if (element["langName"] !== undefined) {
+        newElement.langName = element.langName;
+      }
+
+      if (element.location) {
+        newElement.location = {
+          line: element.location.line,
+          col: element.location.col
+        };
+      }
+
+      return newElement;
+    };
+
+    write(element) {
+      if (this._done) {
+        this.handleCallback(
+          new Error(
+            "Writing to the builder after done() called is not allowed without a reset()"
+          )
+        );
+      }
+      if (this._options.includeLocation) {
+        if (element.type !== Mode.Attr) {
+          element.location = this._getLocation();
+          this._updateLocation(element);
         }
-        this._lastTag.attributes[
-          this._options.caseSensitiveAttr
-            ? element.name
-            : element.name.toLowerCase()
-        ] =
-          element.data;
-      } else if (element.type === Mode.Script) {
-        if (element.name && element.name.charAt(0) == "/") {
+      }
+      if (element.type === Mode.Text && this._options.ignoreWhitespace) {
+        if (this.reWhitespace.test(element.data)) {
           return;
-        } else if (element.name && element.name.charAt(0) == "!") {
-          element.name = this._options.caseSensitiveTags
-            ? element.name.substring(1)
-            : element.name.substring(1).toLowerCase();
-          node = this._copyElement(element);
-          this.dom.push(node);
-          this._lastTag = node;
-        } else if (element.name) {
-          if (element.name)
-            element.name = this._options.caseSensitiveTags
-              ? element.name.substring(1)
-              : element.name.substring(1).toLowerCase();
-          node = this._copyElement(element);
-          this.dom.push(node);
-          this._tagStack.push(node); //Don't add tags to the tag stack that can't have children
-          this._lastTag = node;
-        } else {
-          //This is not a closing tag
-          node = this._copyElement(element);
-          this.dom.push(node);
-          this._lastTag = node;
         }
-      } else {
-        //Otherwise just add to the top level list
-        this.dom.push(this._copyElement(element));
       }
-    } else {
-      //There are parent elements
-      //If the element can be a container, add it as a child of the element
-      //on top of the tag stack and then add it to the tag stack
-      if (element.type === Mode.Tag) {
-        if (element.name.charAt(0) == "/") {
-          //This is a closing tag, scan the tagStack to find the matching opening tag
-          //and pop the stack up to the opening tag's parent
-          var baseName = this._options.caseSensitiveTags
-            ? element.name.substring(1)
-            : element.name.substring(1).toLowerCase();
-          if (!this.isEmptyTag(element)) {
-            var pos = this._tagStack.length - 1;
-            while (pos > -1 && this._tagStack[pos--].name != baseName) {}
-            if (pos > -1 || this._tagStack[0].name == baseName) {
-              while (pos < this._tagStack.length - 1) {
-                this._tagStack.pop();
-              }
-            }
-          }
-        } else {
-          //This is not a closing tag
-          parent = this._tagStack.last();
-          if (element.type === Mode.Attr) {
-            if (!parent.attributes) {
-              parent.attributes = {};
-            }
-            parent.attributes[
-              this._options.caseSensitiveAttr
-                ? element.name
-                : element.name.toLowerCase()
-            ] =
-              element.data;
-          } else {
-            node = this._copyElement(element, parent);
-            if (!parent.children) {
-              parent.children = [];
-            }
-            parent.children.push(node);
+      var parent;
+      var node;
+      if (!this._tagStack.last()) {
+        //There are no parent elements
+        //If the element can be a container, add it to the tag stack and the top level list
+        if (element.type === Mode.Tag) {
+          if (element.name.charAt(0) != "/") {
+            //Ignore closing tags that obviously don't have an opening tag
+            node = this._copyElement(element);
+            this.dom.push(node);
             if (!this.isEmptyTag(node)) {
               //Don't add tags to the tag stack that can't have children
               this._tagStack.push(node);
             }
-            if (element.type === Mode.Tag) {
-              this._lastTag = node;
-            }
+            this._lastTag = node;
           }
-        }
-      } else if (element.type === Mode.Script) {
-        if (element.name && element.name.charAt(0) == "/") {
-          //This is a closing tag, scan the tagStack to find the matching opening tag
-          //and pop the stack up to the opening tag's parent
-          var baseName = this._options.caseSensitiveTags
-            ? element.name.substring(1)
-            : element.name.substring(1).toLowerCase();
-          if (!this.isEmptyTag(element)) {
-            var pos = this._tagStack.length - 1;
-            while (pos > -1 && this._tagStack[pos--].name != baseName) {}
-            if (pos > -1 || this._tagStack[0].name == baseName) {
-              while (pos < this._tagStack.length - 1) {
-                this._tagStack.pop();
-              }
-            }
-          }
-        } else if (element.name && element.name.charAt(0) == "!") {
-          parent = this._tagStack.last();
-          if (element.name)
-            element.name = this._options.caseSensitiveTags
-              ? element.name.substring(1)
-              : element.name.substring(1).toLowerCase();
-          node = this._copyElement(element, parent);
-          if (!parent.children) {
-            parent.children = [];
-          }
-          parent.children.push(node);
-          this._lastTag = node;
-        } else {
-          //This is not a closing tag
-          parent = this._tagStack.last();
-          if (element.name)
-            element.name = this._options.caseSensitiveTags
-              ? element.name.substring(1)
-              : element.name.substring(1).toLowerCase();
-          node = this._copyElement(element, parent);
-          if (!parent.children) {
-            parent.children = [];
-          }
-          parent.children.push(node);
-          if (element.name) {
-            //Don't add tags to the tag stack that can't have children
-            this._tagStack.push(node); //子要素にする
-          }
-          this._lastTag = node;
-        }
-      } else {
-        //This is not a container element
-        parent = this._tagStack.last();
-        if (element.type === Mode.Attr) {
+        } else if (element.type === Mode.Attr && this._lastTag) {
           if (!this._lastTag.attributes) {
             this._lastTag.attributes = {};
           }
@@ -1072,27 +919,167 @@ IN THE SOFTWARE.
               : element.name.toLowerCase()
           ] =
             element.data;
-          /*
-                    if (!parent.attributes) {
-                        parent.attributes = {};
-                    }
-                    parent.attributes[this._options.caseSensitiveAttr ? element.name : element.name.toLowerCase()] =
-                        element.data;
-                  */
-        } else {
-          if (!parent.children) {
-            parent.children = [];
+        } else if (element.type === Mode.Script) {
+          if (element.name && element.name.charAt(0) == "/") {
+            return;
+          } else if (element.name && element.name.charAt(0) == "!") {
+            element.name = this._options.caseSensitiveTags
+              ? element.name.substring(1)
+              : element.name.substring(1).toLowerCase();
+            node = this._copyElement(element);
+            this.dom.push(node);
+            this._lastTag = node;
+          } else if (element.name) {
+            if (element.name)
+              element.name = this._options.caseSensitiveTags
+                ? element.name.substring(1)
+                : element.name.substring(1).toLowerCase();
+            node = this._copyElement(element);
+            this.dom.push(node);
+            this._tagStack.push(node); //Don't add tags to the tag stack that can't have children
+            this._lastTag = node;
+          } else {
+            //This is not a closing tag
+            node = this._copyElement(element);
+            this.dom.push(node);
+            this._lastTag = node;
           }
-          parent.children.push(this._copyElement(element, parent));
+        } else {
+          //Otherwise just add to the top level list
+          this.dom.push(this._copyElement(element));
+        }
+      } else {
+        //There are parent elements
+        //If the element can be a container, add it as a child of the element
+        //on top of the tag stack and then add it to the tag stack
+        if (element.type === Mode.Tag) {
+          if (element.name.charAt(0) == "/") {
+            //This is a closing tag, scan the tagStack to find the matching opening tag
+            //and pop the stack up to the opening tag's parent
+            var baseName = this._options.caseSensitiveTags
+              ? element.name.substring(1)
+              : element.name.substring(1).toLowerCase();
+            if (!this.isEmptyTag(element)) {
+              var pos = this._tagStack.length - 1;
+              while (pos > -1 && this._tagStack[pos--].name != baseName) {}
+              if (pos > -1 || this._tagStack[0].name == baseName) {
+                while (pos < this._tagStack.length - 1) {
+                  this._tagStack.pop();
+                }
+              }
+            }
+          } else {
+            //This is not a closing tag
+            parent = this._tagStack.last();
+            if (element.type === Mode.Attr) {
+              if (!parent.attributes) {
+                parent.attributes = {};
+              }
+              parent.attributes[
+                this._options.caseSensitiveAttr
+                  ? element.name
+                  : element.name.toLowerCase()
+              ] =
+                element.data;
+            } else {
+              node = this._copyElement(element, parent);
+              if (!parent.children) {
+                parent.children = [];
+              }
+              parent.children.push(node);
+              if (!this.isEmptyTag(node)) {
+                //Don't add tags to the tag stack that can't have children
+                this._tagStack.push(node);
+              }
+              if (element.type === Mode.Tag) {
+                this._lastTag = node;
+              }
+            }
+          }
+        } else if (element.type === Mode.Script) {
+          if (element.name && element.name.charAt(0) == "/") {
+            //This is a closing tag, scan the tagStack to find the matching opening tag
+            //and pop the stack up to the opening tag's parent
+            var baseName = this._options.caseSensitiveTags
+              ? element.name.substring(1)
+              : element.name.substring(1).toLowerCase();
+            if (!this.isEmptyTag(element)) {
+              var pos = this._tagStack.length - 1;
+              while (pos > -1 && this._tagStack[pos--].name != baseName) {}
+              if (pos > -1 || this._tagStack[0].name == baseName) {
+                while (pos < this._tagStack.length - 1) {
+                  this._tagStack.pop();
+                }
+              }
+            }
+          } else if (element.name && element.name.charAt(0) == "!") {
+            parent = this._tagStack.last();
+            if (element.name)
+              element.name = this._options.caseSensitiveTags
+                ? element.name.substring(1)
+                : element.name.substring(1).toLowerCase();
+            node = this._copyElement(element, parent);
+            if (!parent.children) {
+              parent.children = [];
+            }
+            parent.children.push(node);
+            this._lastTag = node;
+          } else {
+            //This is not a closing tag
+            parent = this._tagStack.last();
+            if (element.name)
+              element.name = this._options.caseSensitiveTags
+                ? element.name.substring(1)
+                : element.name.substring(1).toLowerCase();
+            node = this._copyElement(element, parent);
+            if (!parent.children) {
+              parent.children = [];
+            }
+            parent.children.push(node);
+            if (element.name) {
+              //Don't add tags to the tag stack that can't have children
+              this._tagStack.push(node); //子要素にする
+            }
+            this._lastTag = node;
+          }
+        } else {
+          //This is not a container element
+          parent = this._tagStack.last();
+          if (element.type === Mode.Attr) {
+            if (!this._lastTag.attributes) {
+              this._lastTag.attributes = {};
+            }
+            this._lastTag.attributes[
+              this._options.caseSensitiveAttr
+                ? element.name
+                : element.name.toLowerCase()
+            ] =
+              element.data;
+            /*
+                      if (!parent.attributes) {
+                          parent.attributes = {};
+                      }
+                      parent.attributes[this._options.caseSensitiveAttr ? element.name : element.name.toLowerCase()] =
+                          element.data;
+                    */
+          } else {
+            if (!parent.children) {
+              parent.children = [];
+            }
+            parent.children.push(this._copyElement(element, parent));
+          }
         }
       }
-    }
-  };
+    };
 
-  //**Private**//
-  //Methods//
+    //**Private**//
+    //Methods//
+
   }
+  
   class Element {
+    //Properties//
+    //Methods//
     constructor(_type, _parentNode) {
       this.type = _type;
       this.parentNode = _parentNode;
@@ -1117,106 +1104,105 @@ IN THE SOFTWARE.
       return ret;
     }
  
-    
-  getElementById(id, recurse) {
-    return DomUtils.getElementById(id, this, recurse);
-  };
-  getElementsByTagName(id, recurse, limit) {
-    return DomUtils.getElementsByTagName(id, this, recurse, limit);
-  };
-  getElementsByTagType(type, recurse, limit) {
-    return DomUtils.getElementsByTagType(type, this, recurse, limit);
-  };
-  getElements(options, recurse, limit) {
-    return DomUtils.getElements(options, this, recurse, limit);
-  };
-  removeChildAll() {
-    return DomUtils.removeChildAll(this);
-  };
-  removeChild(element) {
-    return DomUtils.removeChild(element, this);
-  };
-  createNode(type, parentNode) {
-    return new Element(type, parentNode || null);
-  };
-  createElement(tagName, parentNode) {
-    var newElement = new Element("tag", parentNode || null);
-    newElement.name = tagName;
-    return newElement;
-  };
-  createTextNode(text, parentNode) {
-    var newElement = new Element("text", parentNode || null);
-    newElement.data = text;
-    return newElement;
-  };
+    getElementById(id, recurse) {
+      return DomUtils.getElementById(id, this, recurse);
+    };
+    getElementsByTagName(id, recurse, limit) {
+      return DomUtils.getElementsByTagName(id, this, recurse, limit);
+    };
+    getElementsByTagType(type, recurse, limit) {
+      return DomUtils.getElementsByTagType(type, this, recurse, limit);
+    };
+    getElements(options, recurse, limit) {
+      return DomUtils.getElements(options, this, recurse, limit);
+    };
+    removeChildAll() {
+      return DomUtils.removeChildAll(this);
+    };
+    removeChild(element) {
+      return DomUtils.removeChild(element, this);
+    };
+    createNode(type, parentNode) {
+      return new Element(type, parentNode || null);
+    };
+    createElement(tagName, parentNode) {
+      var newElement = new Element("tag", parentNode || null);
+      newElement.name = tagName;
+      return newElement;
+    };
+    createTextNode(text, parentNode) {
+      var newElement = new Element("text", parentNode || null);
+      newElement.data = text;
+      return newElement;
+    };
 
-  appendChild(element) {
-    this.children = this.children || [];
-    element.parentNode = this;
-    this.children.push(element);
-  };
+    appendChild(element) {
+      this.children = this.children || [];
+      element.parentNode = this;
+      this.children.push(element);
+    };
 
-  insertBefore(newNode, referenceNode) {
-    this.children = this.children || [];
-    var index = this.children.indexOf(referenceNode);
-    this.children.splice(index, 0, newNode);
-  };
+    insertBefore(newNode, referenceNode) {
+      this.children = this.children || [];
+      var index = this.children.indexOf(referenceNode);
+      this.children.splice(index, 0, newNode);
+    };
 
-  getAttribute(name) {
-    this.attributes[name];
-  };
+    getAttribute(name) {
+      this.attributes[name];
+    };
 
-  cloneElement(parentNode) {
-    function cloneAttributes(attributes) {
-      var newAttributes = {};
-      for (var key in attributes) {
-        var attribute = attributes[key]; //list
-        var _attribute = [];
-        for (var i = 0; i < attribute.length; i++) {
-          var attributeElement = attribute[i]; //object {type,data,langName}
-          var _attributeElement = {
-            type: attributeElement.type,
-            data: attributeElement.data
-          };
-          if (attributeElement.langName)
-            _attributeElement.langName = attributeElement.langName;
-          _attribute.push(_attributeElement);
+    cloneElement(parentNode) {
+      function cloneAttributes(attributes) {
+        var newAttributes = {};
+        for (var key in attributes) {
+          var attribute = attributes[key]; //list
+          var _attribute = [];
+          for (var i = 0; i < attribute.length; i++) {
+            var attributeElement = attribute[i]; //object {type,data,langName}
+            var _attributeElement = {
+              type: attributeElement.type,
+              data: attributeElement.data
+            };
+            if (attributeElement.langName)
+              _attributeElement.langName = attributeElement.langName;
+            _attribute.push(_attributeElement);
+          }
+          newAttributes[key] = _attribute;
         }
-        newAttributes[key] = _attribute;
+        return newAttributes;
       }
-      return newAttributes;
-    }
-    var newElement = this.createNode(this.type, parentNode || {});
-    if (this.name) newElement.name = this.name;
-    if (this.raw) newElement.raw = this.raw;
-    if (this.location)
-      newElement.location = {
-        line: this.location.line,
-        col: this.location.col
-      };
-    if (this.langName) newElement.langName = this.langName;
-    if (this.data) newElement.data = this.data;
+      var newElement = this.createNode(this.type, parentNode || {});
+      if (this.name) newElement.name = this.name;
+      if (this.raw) newElement.raw = this.raw;
+      if (this.location)
+        newElement.location = {
+          line: this.location.line,
+          col: this.location.col
+        };
+      if (this.langName) newElement.langName = this.langName;
+      if (this.data) newElement.data = this.data;
 
-    if (this.attributes)
-      newElement.attributes = cloneAttributes(this.attributes);
-    if (this.children) {
-      newElement.children = [];
-      for (var i = 0; i < this.children.length; i++) {
-        var child = this.children[i];
-        child.cloneElement(newElement);
+      if (this.attributes)
+        newElement.attributes = cloneAttributes(this.attributes);
+      if (this.children) {
+        newElement.children = [];
+        for (var i = 0; i < this.children.length; i++) {
+          var child = this.children[i];
+          child.cloneElement(newElement);
+        }
       }
-    }
-    if (newElement.parentNode.children) {
-      newElement.parentNode.children.push(newElement);
-    } else {
-      newElement.parentNode.children = [newElement];
-    }
-    return newElement;
-  };
-  //getElementsByClassName
-  //getAttribute
-  //setAttribute
-  //removeAttribute
+      if (newElement.parentNode.children) {
+        newElement.parentNode.children.push(newElement);
+      } else {
+        newElement.parentNode.children = [newElement];
+      }
+      return newElement;
+    };
+    //getElementsByClassName
+    //getAttribute
+    //setAttribute
+    //removeAttribute
 
   }
 
