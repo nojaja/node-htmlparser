@@ -513,7 +513,7 @@ IN THE SOFTWARE.
           }
           state.lastTag.raw += matchTrailingSlash[1];
           // state.output.push({ type: Mode.Tag, name: '/' + state.lastTag.name, raw: null });
-          this._write({
+          this.perser._write({
             type: Mode.Tag,
             name: "/" + state.lastTag.name,
             raw: null
