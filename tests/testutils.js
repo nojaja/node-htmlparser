@@ -97,6 +97,24 @@ exports.runBuilderTests = function (tests, parserCtor, builderCtor, permutator, 
             // util.puts("Builder error: " + error);
         }
     };
+    var toJson = function(parseData) {
+      var cache = [];
+      var tmp = JSON.stringify(parseData, function(key, value) {
+        if (key == 'parentNode') return;
+        if (key == 'attribs') return value;
+        if (key == 'nextSibling') return;
+        if (typeof value === 'object' && value !== null) {
+          if (cache.indexOf(value) !== -1) { // Circular reference found, discard key
+            return;
+          }
+          // Store value in our collection
+          cache.push(value);
+        }
+        return value;
+      });
+      //console.log(tmp);
+      return JSON.parse(tmp);
+    }
 
     // console.log(tests);
 
@@ -119,7 +137,8 @@ exports.runBuilderTests = function (tests, parserCtor, builderCtor, permutator, 
             }
             parser.done();
         }
-        var testResult = exports.compareObjects(builder.dom, test.expected);
+        var testResult = exports.compareObjects(toJson(builder.dom), test.expected);
+        if(!testResult) console.log(testName,toJson(builder.dom), test.expected);
 
         testHandler(testName, testResult, builder.dom, test.expected);
         if (!testResult) {

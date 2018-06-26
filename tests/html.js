@@ -103,7 +103,7 @@ exports["Unescaped chars in script"] = {
          [ { raw: 'script language="Javascript"'
            , type: 'tag'
            , name: 'script'
-           , attributes: { language: 'Javascript' }
+           , attributes: { language: [{data : 'Javascript',type:'text'}] }
            , children:
               [ { data: 'var foo = "<bar>"; alert(2 > foo); var baz = 10 << 2; var zip = 10 >> 1; var yap = \"<<>>>><<\";'
                 , type: 'text'
@@ -163,7 +163,7 @@ exports["Unescaped chars in style"] = {
       { raw: 'style type="text/css"'
       , type: 'tag'
       , name: 'style'
-      , attributes: { type: 'text/css' }
+      , attributes: { type: [{data : 'text/css',type:'text'}] }
       , children:
          [ { data: "\n body > p\n  { font-weight: bold; }"
            , type: 'text'
@@ -183,7 +183,7 @@ exports["Extra spaces in tag"] = {
       { raw: "\n font    \n size='14' \n"
       , type: 'tag'
       , name: 'font'
-      , attributes: { size: '14' }
+      , attributes: { size: [{data : '14',type:'text'}] }
       , children:
          [ { data: 'the text'
            , type: 'text'
@@ -203,7 +203,7 @@ exports["Unquoted attributes"] = {
       { raw: 'font size= 14'
       , type: 'tag'
       , name: 'font'
-      , attributes: { size: '14' }
+      , attributes: { size: [{data : '14',type:'text'}] }
       , children:
          [ { data: 'the text'
            , type: 'text'
@@ -223,7 +223,7 @@ exports["Singular attribute"] = {
       { raw: 'option value=\'foo\' selected'
       , type: 'tag'
       , name: 'option'
-      , attributes: { value: 'foo', selected: null }
+      , attributes: { value: [{data : 'foo',type:'text'}], selected: [] }
       }
     ]
     };
@@ -308,7 +308,7 @@ exports["Option 'verbose' set to 'false'"] = {
     expected: [
       { type: 'tag'
       , name: 'font'
-      , attributes: { size: '14' }
+      , attributes: { size: [{data : '14',type:'text'}] }
       , children:
          [ { data: 'the text'
            , type: 'text'
@@ -408,7 +408,7 @@ exports["Postion data"] = {
             raw: " html x='y' ",
             type: 'tag',
             name: 'html',
-            attributes: { x: 'y' },
+            attributes: { x: [{data : 'y',type:'text',location: { line: 1, col: 1}}] },
             location: {
                 line: 1,
                 col: 1
