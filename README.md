@@ -6,6 +6,14 @@ A forgiving HTML/XML/RSS parser written in JS for both the browser and NodeJS (y
 	npm install htmlparser
 
 
+## development
+npm install -g babel-cli
+npm install -g grunt-cli
+npm install -g browserify
+npm install
+grunt
+
+
 ## migration
   ### v1.7.6 -> v2.1
   * DefaultHandler -> HtmlBuilder

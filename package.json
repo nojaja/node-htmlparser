@@ -1,33 +1,52 @@
 {
-	  "name": "htmlparser"
-	, "description": "Forgiving HTML/XML/RSS Parser in JS for *both* Node and Browsers"
-	, "version": "2.0.0"
-	, "author": "Chris Winberry <chris@winberry.net>"
-	, "contributors": []
-	, "repository": {
-		  "type": "git"
-		, "url": "https://github.com/tautologistics/node-htmlparser"
-	}
-	, "keywords" : [
-		  "html"
-		, "xml"
-		, "rss"
-		, "parser"
-	]
-	, "directories": {
-		"lib": "./lib"
-	}
-	, "main": "./lib/htmlparser.js"
-	, "homepage": "http://github.com/tautologistics/node-htmlparser"
-	, "bugs": {
-		  "mail": "chris@winberry.net"
-		, "url": "http://github.com/tautologistics/node-htmlparser/issues"
-	}
-	, "directories": { "lib": "./lib/" }
-	, "main": "./lib/htmlparser"
-	, "engines": { "node": ">=0.5.0" }
-	, "licenses": [{
-		  "type": "MIT"
-		, "url": "http://github.com/tautologistics/node-htmlparser/raw/master/LICENSE"
-	}]
+  "name": "htmlparser",
+  "description": "Forgiving HTML/XML/RSS Parser in JS for *both* Node and Browsers",
+  "version": "3.0.0",
+  "author": "Chris Winberry <chris@winberry.net>",
+  "contributors": [],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tautologistics/node-htmlparser"
+  },
+  "keywords": [
+    "html",
+    "xml",
+    "rss",
+    "parser"
+  ],
+  "directories": {
+    "lib": "./lib/"
+  },
+  "main": "./lib/htmlparser",
+  "homepage": "http://github.com/tautologistics/node-htmlparser",
+  "bugs": {
+    "mail": "chris@winberry.net",
+    "url": "http://github.com/tautologistics/node-htmlparser/issues"
+  },
+  "engines": {
+    "node": ">=0.5.0"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "http://github.com/tautologistics/node-htmlparser/raw/master/LICENSE"
+    }
+  ],
+  "scripts": {
+    "test": "node ./tests/etc/test.js",
+    "babel": "babel ./src/htmlparser.es6 -o ./lib/htmlparser.js",
+    "build": "browserify ./src/htmlparser.es6 -t babelify -o ./lib/htmlparser.js"
+  },
+  "devDependencies": {
+    "babel-core": "^6.26.3",
+    "babel-plugin-add-module-exports": "^1.0.0",
+    "babel-plugin-transform-es2015-modules-umd": "^6.24.1",
+    "babel-preset-es2015": "^6.24.1",
+    "babelify": "^7.3.0",
+    "browserify": "^16.2.3",
+    "grunt": "^1.0.3",
+    "grunt-babel": "^7.0.0",
+    "grunt-contrib-concat": "^1.0.1",
+    "grunt-contrib-uglify": "^4.0.0"
+  }
 }
