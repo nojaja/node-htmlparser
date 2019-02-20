@@ -7,11 +7,12 @@ A forgiving HTML/XML/RSS parser written in JS for both the browser and NodeJS (y
 
 
 ## development
-npm install -g babel-cli
-npm install -g grunt-cli
-npm install -g browserify
-npm install
-grunt
+
+	npm install -g babel-cli
+	npm install -g grunt-cli
+	npm install -g browserify
+	npm install
+	grunt
 
 
 ## migration

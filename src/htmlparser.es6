@@ -20,6 +20,7 @@ IN THE SOFTWARE.
 ***********************************************/
 /* v3.0.0 */
 (function () {
+  /*
   var exports;
   if (typeof module !== "undefined" && typeof module.exports !== "undefined") {
     exports = module.exports;
@@ -33,6 +34,15 @@ IN THE SOFTWARE.
     }
     this.Tautologistics.NodeHtmlParser = exports;
   }
+  */
+
+  if (typeof window !== 'undefined') {
+    if (!window.Tautologistics) {
+      window.Tautologistics = {};
+    }
+    window.Tautologistics.NodeHtmlParser = exports;
+  }
+
 
 })();
 

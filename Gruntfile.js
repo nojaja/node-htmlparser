@@ -45,7 +45,7 @@ module.exports = function(grunt) {
             options: {
               sourceMap: true,
               presets: ['es2015'],
-              plugins: ["add-module-exports"]
+              plugins: ["transform-es2015-modules-umd","add-module-exports"]
             },
             dist: {
               files: {
