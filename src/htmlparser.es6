@@ -55,8 +55,8 @@ IN THE SOFTWARE.
     },
     {
       langName: "singleMustache",
-      open: "{",
-      close: "}",
+      open: "{%",
+      close: "%}",
       openCode: "\uFFF2",
       closeCode: "\uFFF3"
     }
