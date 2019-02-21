@@ -24,7 +24,8 @@ module.exports = function(grunt) {
                     'src/ParseDoctype.es6',
                     'src/ParseComment.es6',
                     'src/HtmlBuilder.es6',
-                    'src/Element.es6'],
+                    'src/Element.es6',
+                    'src/DomUtils.es6'],
 				//src: 'src/*.es6',
 				dest: 'lib/htmlparser.es6'
 			}
