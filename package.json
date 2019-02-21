@@ -33,8 +33,10 @@
     }
   ],
   "scripts": {
-    "test": "node ./tests/etc/test.js",
+    "test": "jasmine",
+    "test2": "node ./tests/etc/test.js",
     "babel": "babel ./src/htmlparser.es6 -o ./lib/htmlparser.js",
+    "build": "grunt",
     "build": "browserify ./src/htmlparser.es6 -t babelify -o ./lib/htmlparser.js"
   },
   "devDependencies": {
@@ -47,6 +49,7 @@
     "grunt": "^1.0.3",
     "grunt-babel": "^7.0.0",
     "grunt-contrib-concat": "^1.0.1",
-    "grunt-contrib-uglify": "^4.0.0"
+    "grunt-contrib-uglify": "^4.0.0",
+    "jasmine": "^3.3.1"
   }
 }
