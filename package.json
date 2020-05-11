@@ -1,33 +1,42 @@
 {
-	  "name": "htmlparser"
-	, "description": "Forgiving HTML/XML/RSS Parser in JS for *both* Node and Browsers"
-	, "version": "2.0.0"
-	, "author": "Chris Winberry <chris@winberry.net>"
-	, "contributors": []
-	, "repository": {
-		  "type": "git"
-		, "url": "https://github.com/tautologistics/node-htmlparser"
+	"name": "htmlparser",
+	"description": "Forgiving HTML/XML/RSS Parser in JS for *both* Node and Browsers",
+	"version": "2.0.0",
+	"author": "Chris Winberry <chris@winberry.net>",
+	"contributors": [],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/tautologistics/node-htmlparser"
+	},
+	"keywords": [
+		"html",
+		"xml",
+		"rss",
+		"parser"
+	],
+	"directories": {
+		"lib": "./lib/"
+	},
+	"main": "./lib/htmlparser",
+    "scripts": {
+        "test": "mocha \"tests/mocha/**/*.js\""
+    },
+	"homepage": "http://github.com/tautologistics/node-htmlparser",
+	"bugs": {
+		"mail": "chris@winberry.net",
+		"url": "http://github.com/tautologistics/node-htmlparser/issues"
+	},
+	"engines": {
+		"node": ">=0.5.0"
+	},
+	"licenses": [
+		{
+			"type": "MIT",
+			"url": "http://github.com/tautologistics/node-htmlparser/raw/master/LICENSE"
+		}
+	],
+	"devDependencies": {
+		"chai": "^4.2.0",
+		"mocha": "^7.1.2"
 	}
-	, "keywords" : [
-		  "html"
-		, "xml"
-		, "rss"
-		, "parser"
-	]
-	, "directories": {
-		"lib": "./lib"
-	}
-	, "main": "./lib/htmlparser.js"
-	, "homepage": "http://github.com/tautologistics/node-htmlparser"
-	, "bugs": {
-		  "mail": "chris@winberry.net"
-		, "url": "http://github.com/tautologistics/node-htmlparser/issues"
-	}
-	, "directories": { "lib": "./lib/" }
-	, "main": "./lib/htmlparser"
-	, "engines": { "node": ">=0.5.0" }
-	, "licenses": [{
-		  "type": "MIT"
-		, "url": "http://github.com/tautologistics/node-htmlparser/raw/master/LICENSE"
-	}]
 }
