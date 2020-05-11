@@ -1,0 +1,14 @@
+image:
+  file: .gitpod.Dockerfile
+tasks:
+  - init: npm install
+
+tasks:
+  - name: init
+    init: >
+      npm install;
+  - name: npmstart
+    command: >
+      export TZ="Asia/Tokyo";
+      eval $(gp env -e);
+      npm run test;
