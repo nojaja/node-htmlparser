@@ -1,18 +1,19 @@
 {
-	"name": "htmlparser",
+	"name": "@nojaja/htmlparser",
 	"description": "Forgiving HTML/XML/RSS Parser in JS for *both* Node and Browsers",
 	"version": "2.1.0",
-	"author": "Chris Winberry <chris@winberry.net>",
+	"author": "nojaja",
 	"contributors": [],
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/tautologistics/node-htmlparser"
+		"url": "git+https://github.com/tautologistics/node-htmlparser"
 	},
 	"keywords": [
 		"html",
 		"xml",
 		"rss",
-		"parser"
+		"parser",
+		"htmlparser"
 	],
 	"directories": {
 		"lib": "./lib/"
@@ -21,10 +22,9 @@
 	"scripts": {
 		"test": "mocha \"tests/mocha/**/*.js\""
 	},
-	"homepage": "http://github.com/tautologistics/node-htmlparser",
+	"homepage": "https://github.com/nojaja/node-htmlparser",
 	"bugs": {
-		"mail": "chris@winberry.net",
-		"url": "http://github.com/tautologistics/node-htmlparser/issues"
+		"url": "https://github.com/nojaja/node-htmlparser/issues"
 	},
 	"engines": {
 		"node": ">=0.5.0"
@@ -32,7 +32,7 @@
 	"licenses": [
 		{
 			"type": "MIT",
-			"url": "http://github.com/tautologistics/node-htmlparser/raw/master/LICENSE"
+			"url": "http://github.com/nojaja/node-htmlparser/raw/master/LICENSE"
 		}
 	],
 	"devDependencies": {
