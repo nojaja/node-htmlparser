@@ -5,7 +5,7 @@ A forgiving HTML/XML/RSS parser written in JS for both the browser and NodeJS (y
 
 ## Installing
 
-	npm install htmlparser
+	npm install @nojaja/htmlparser
 
 
 ## migration
